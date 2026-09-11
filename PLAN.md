@@ -94,11 +94,11 @@ ml_webpage/
 
 | Fase | Contenido | Estado | Commit |
 |---|---|---|---|
-| 0 | **Esqueleto** — repo, Astro, submodule, colecciones, `lib/curso.ts`, KaTeX/Shiki, layout base con tokens y toggle de tema, una lección real renderizada | ✅ hecha | |
-| 1 | **Navegación** — sidebar acordeón, índice de módulo, landing, programa, instalación, prev/next, píldoras + TOC, rutas de ejercicios y quiz formal, check anti-soluciones | ✅ hecha | |
-| 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ✅ hecha | |
-| 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | |
-| 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | |
+| 0 | **Esqueleto** — repo, Astro, submodule, colecciones, `lib/curso.ts`, KaTeX/Shiki, layout base con tokens y toggle de tema, una lección real renderizada | ✅ hecha | `a213220` · `ad34528` |
+| 1 | **Navegación** — sidebar acordeón, índice de módulo, landing, programa, instalación, prev/next, píldoras + TOC, rutas de ejercicios y quiz formal, check anti-soluciones | ✅ hecha | `87b05a1` |
+| 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ✅ hecha | `3c6e7ca` |
+| 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | `c591f9c` |
+| 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | `a6a43c0` |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ⬜ pendiente | |
 | 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ⬜ pendiente | |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |

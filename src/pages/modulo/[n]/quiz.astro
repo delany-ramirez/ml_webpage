@@ -19,7 +19,7 @@ const { Content, headings } = await render(entry);
 const tieneAuto = (await modulosConAutoevaluacion()).has(leccion.modulo.numero);
 ---
 
-<Curso title={`Quiz · Módulo ${leccion.modulo.numero}`} activo={leccion.id} moduloActivo={leccion.modulo.numero} headings={headings}>
+<Curso title={`Quiz · Módulo ${leccion.modulo.numero}`} activo={leccion.id} moduloActivo={leccion.modulo.numero} headings={headings} tipo="Quiz">
   <Cabecera
     eyebrow={`Módulo ${leccion.modulo.numero} · ${etiquetaSesion(leccion)} · Quiz de cierre`}
     titulo={leccion.titulo}
@@ -30,7 +30,7 @@ const tieneAuto = (await modulosConAutoevaluacion()).has(leccion.modulo.numero);
     {leccion.duracion && <span class="chip">⏱ {leccion.duracion}</span>}
   </Cabecera>
 
-  <aside class="aviso rise">
+  <aside class="aviso rise" data-pagefind-ignore>
     <strong>Cómo se responde.</strong> Este quiz es de respuesta abierta y se entrega al
     docente; se evalúa el razonamiento, no la extensión. La clave de respuestas es material del
     docente y no se publica aquí. Para comprobar tu comprensión por tu cuenta,

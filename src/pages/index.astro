@@ -12,7 +12,7 @@ const primera = porModulo.get(1)?.[0];
 
 <Base>
   <IndiceCurso />
-  <main class="wrap">
+  <main class="wrap" id="contenido">
     <section class="hero">
       <div class="hero-txt">
         <span class="status rise">
@@ -251,8 +251,12 @@ const primera = porModulo.get(1)?.[0];
     border-color: var(--gold);
     transform: translateY(-3px);
   }
-  .mod.vacio {
-    opacity: 0.7;
+  .mod.vacio h3 {
+    color: var(--muted);
+  }
+  .mod.vacio .idx {
+    color: var(--muted);
+    border-color: var(--line-strong);
   }
   .mod-top {
     display: flex;

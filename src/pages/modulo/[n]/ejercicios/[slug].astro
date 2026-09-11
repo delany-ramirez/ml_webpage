@@ -24,7 +24,7 @@ const prev = i > 0 ? hermanos[i - 1] : null;
 const next = i < hermanos.length - 1 ? hermanos[i + 1] : null;
 ---
 
-<Curso title={`Ejercicio ${nn(leccion.orden)} · ${tituloTexto(leccion.titulo)}`} activo={leccion.id} moduloActivo={leccion.modulo.numero} headings={headings}>
+<Curso title={`Ejercicio ${nn(leccion.orden)} · ${tituloTexto(leccion.titulo)}`} activo={leccion.id} moduloActivo={leccion.modulo.numero} headings={headings} tipo="Ejercicio">
   <Cabecera
     eyebrow={`Módulo ${leccion.modulo.numero} · ${etiquetaSesion(leccion)} · Ejercicio`}
     titulo={leccion.titulo}
@@ -40,7 +40,7 @@ const next = i < hermanos.length - 1 ? hermanos[i + 1] : null;
     <Content />
   </article>
 
-  <aside class="aviso rise d2">
+  <aside class="aviso rise d2" data-pagefind-ignore>
     <strong>Entrega.</strong> Los ejercicios se entregan al docente según lo indicado en clase.
     La solución es material del docente y no se publica en este sitio.
   </aside>

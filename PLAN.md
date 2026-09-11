@@ -98,7 +98,7 @@ ml_webpage/
 | 1 | **Navegación** — sidebar acordeón, índice de módulo, landing, programa, instalación, prev/next, píldoras + TOC, rutas de ejercicios y quiz formal, check anti-soluciones | ✅ hecha | |
 | 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ✅ hecha | |
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | |
-| 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ⬜ pendiente | |
+| 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ⬜ pendiente | |
 | 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ⬜ pendiente | |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |
@@ -264,13 +264,38 @@ autoevaluación cuando existe.
 - Pendiente de contenido (Fase 6): autoevaluaciones de los módulos 1, 2 y 4; más widgets.
 
 
-### ⬜ Fase 4 — Búsqueda y pulido
+### ✅ Fase 4 — Búsqueda y pulido (2026-09-11)
 
-- [ ] Pagefind en `postbuild`; modal Ctrl+K con resultados agrupados por módulo.
-- [ ] `404.astro`, sitemap, `robots.txt`, `favicon.svg` (marca dorada del portafolio).
-- [ ] Revisión responsive a 400 px (sin scroll horizontal; tablas y código con `overflow-x`).
-- [ ] Accesibilidad: foco visible dorado, `aria-*` en sidebar/acordeón/toggle, contraste AA en
+- [x] Pagefind en `postbuild`; modal Ctrl+K con resultados agrupados por módulo.
+- [x] `404.astro`, sitemap, `robots.txt`, `favicon.svg` (marca dorada del portafolio).
+- [x] Revisión responsive a 400 px (sin scroll horizontal; tablas y código con `overflow-x`).
+- [x] Accesibilidad: foco visible dorado, `aria-*` en sidebar/acordeón/toggle, contraste AA en
       tema claro. Lighthouse ≥ 95 en accesibilidad en una lección.
+
+Resultado: 51 páginas. `Buscador.astro` (modal Ctrl+K / botón en la nav; carga
+`/pagefind/pagefind.js` solo al abrir; resultados agrupados por módulo con tipo y extracto
+resaltado; ↑↓↵ y Esc). Pagefind corre en `postbuild` con `pagefind.yml` (excluye el MathML
+oculto de KaTeX). Solo se indexa `main#contenido` (`data-pagefind-body`); metadatos `tipo` y
+`modulo` como **un atributo `data-pagefind-meta` por metadato** (no admite varios separados
+por coma). Fuera del índice: chips/botón de la cabecera, complementos, cierre y avisos.
+`404.astro`, `robots.txt` (con sitemap), skip-link «Saltar al contenido» → `#contenido`,
+foco gestionado en el drawer (abre → botón cerrar; cierra → botón Temario).
+- **Accesibilidad: Lighthouse 100** en landing, lección, índice de módulo y /progreso/ (tema
+  claro, el más exigente). Para llegar hubo que subir el contraste del tema claro:
+  `--gold #8a6318` (≈5:1 sobre papel), `--muted #4f5a67`, `--muted-2 #66707e`,
+  `--silver #5f6a78`, `--bronze #8c5f33`, `--ok #27874d`, `--gold-soft` al 10 %; en oscuro
+  `--muted-2 #76818f`. Tarjetas de módulos vacíos sin `opacity` (bajaba el contraste);
+  enlaces dentro de párrafos con subrayado; `/progreso/` con h2 (orden de encabezados).
+- **Responsive**: `.prose { overflow-wrap: anywhere; overflow-x: clip }` evita el scroll
+  horizontal por `code` inline largo o MathML de KaTeX. `scripts/e2e-busqueda.mjs` recorre las
+  50 páginas a 400 px y comprueba `scrollWidth ≤ 400`.
+- El import dinámico de `/pagefind/pagefind.js` debe ir en una variable con `/* @vite-ignore */`
+  o Rollup falla al resolverlo en build.
+- Pagefind hace coincidencia difusa; el e2e prueba varias cadenas hasta obtener el estado vacío.
+- Se corrigió un error de tipos latente desde la Fase 1 (`rel` en hProperties debe ser array).
+- `npm run e2e` ahora encadena 3 suites (17 + 22 + 18 aserciones). Lighthouse se corre a mano
+  con `npx lighthouse@12 <url> --only-categories=accessibility --chrome-flags=--headless=new`.
+
 
 ### ⬜ Fase 5 — Deploy
 

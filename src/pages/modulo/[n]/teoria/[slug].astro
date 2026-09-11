@@ -22,7 +22,7 @@ const { prev, next } = await prevNext(leccion.id);
 const clave = claveProgreso(leccion);
 ---
 
-<Curso title={tituloTexto(leccion.titulo)} activo={leccion.id} moduloActivo={leccion.modulo.numero} headings={headings}>
+<Curso title={tituloTexto(leccion.titulo)} activo={leccion.id} moduloActivo={leccion.modulo.numero} headings={headings} tipo="Lección">
   <Cabecera
     eyebrow={`Módulo ${leccion.modulo.numero} · ${etiquetaSesion(leccion)}`}
     titulo={leccion.titulo}
@@ -41,7 +41,7 @@ const clave = claveProgreso(leccion);
 
   <Complementos leccion={leccion} />
 
-  <section class="cierre rise d2">
+  <section class="cierre rise d2" data-pagefind-ignore>
     <div>
       <span class="eyebrow">Fin de la lección</span>
       <p>
@@ -83,6 +83,8 @@ const clave = claveProgreso(leccion);
   }
   .cierre p a {
     color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .cierre p a :global(code) {
     font-family: var(--font-mono);

@@ -46,7 +46,7 @@ export default function remarkEnlacesContenido() {
       }
       link.url = ancla ? `${publico}#${ancla}` : publico;
       if (/^https?:/.test(publico)) {
-        link.data = { ...(link.data ?? {}), hProperties: { target: "_blank", rel: "noopener" } };
+        link.data = { ...(link.data ?? {}), hProperties: { target: "_blank", rel: ["noopener"] } };
       }
     });
   };

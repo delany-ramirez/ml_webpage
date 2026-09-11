@@ -15,8 +15,11 @@ interface Props {
   activo?: string;
   moduloActivo?: number;
   headings?: MarkdownHeading[];
+  /** etiqueta para la búsqueda: Lección, Ejercicio, Quiz, Autoevaluación, Módulo, Documento */
+  tipo?: string;
 }
-const { title, description, activo, moduloActivo, headings = [] } = Astro.props;
+const { title, description, activo, moduloActivo, headings = [], tipo = "Página" } = Astro.props;
+
 ---
 
 <Base title={title} description={description}>
@@ -34,7 +37,10 @@ const { title, description, activo, moduloActivo, headings = [] } = Astro.props;
     <div class="col-sidebar">
       <Sidebar activo={activo} moduloActivo={moduloActivo} />
     </div>
-    <main class="col-contenido">
+    <main class="col-contenido" id="contenido" data-pagefind-body>
+      <!-- Pagefind: un atributo por metadato (no admite varios separados por coma) -->
+      <span data-pagefind-meta={`tipo:${tipo}`} hidden></span>
+      {moduloActivo && <span data-pagefind-meta={`modulo:${moduloActivo}`} hidden></span>}
       <slot />
     </main>
     <div class="col-toc">

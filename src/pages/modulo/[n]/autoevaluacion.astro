@@ -20,7 +20,7 @@ const [s0, s1] = modulo.sesiones;
 const sesiones = s0 === s1 ? `Sesión ${s0}` : `Sesiones ${s0}–${s1}`;
 ---
 
-<Curso title={`Autoevaluación · Módulo ${modulo.numero}`} moduloActivo={modulo.numero}>
+<Curso title={`Autoevaluación · Módulo ${modulo.numero}`} moduloActivo={modulo.numero} tipo="Autoevaluación">
   <Cabecera eyebrow={`Módulo ${modulo.numero} · ${sesiones} · Autoevaluación`} titulo={modulo.nombre}>
     <span class="chip gold">{modulo.corto}</span>
     <span class="chip">{preguntas.length} preguntas</span>
@@ -49,5 +49,7 @@ const sesiones = s0 === s1 ? `Sesión ${s0}` : `Sesiones ${s0}–${s1}`;
   }
   .intro a {
     color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 </style>

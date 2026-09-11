@@ -33,7 +33,7 @@ const prevMod = i > 0 ? MODULOS[i - 1] : null;
 const nextMod = i < MODULOS.length - 1 ? MODULOS[i + 1] : null;
 ---
 
-<Curso title={`Módulo ${modulo.numero} · ${modulo.nombre}`} moduloActivo={modulo.numero} headings={headings}>
+<Curso title={`Módulo ${modulo.numero} · ${modulo.nombre}`} moduloActivo={modulo.numero} headings={headings} tipo="Módulo">
   <Cabecera eyebrow={`Módulo ${modulo.numero} · ${sesiones} · ${modulo.horas} h`} titulo={modulo.nombre} headings={headings}>
     {vacio ? (
       <span class="chip">En construcción</span>

@@ -31,7 +31,7 @@ const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0;
 ---
 
 {hay && (
-  <section class="complementos" aria-label="Complementos de la lección">
+  <section class="complementos" aria-label="Complementos de la lección" data-pagefind-ignore>
     {widgets.length > 0 && (
       <div class="bloque explora">
         <div class="b-head">
@@ -165,5 +165,7 @@ const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0;
   }
   .b-nota a {
     color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 </style>

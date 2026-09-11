@@ -8,11 +8,11 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
-    "postbuild": "node scripts/verificar-sin-soluciones.mjs",
+    "postbuild": "pagefind --quiet && node scripts/verificar-sin-soluciones.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "e2e": "node scripts/e2e-progreso.mjs && node scripts/e2e-interactivos.mjs"
+    "e2e": "node scripts/e2e-progreso.mjs && node scripts/e2e-interactivos.mjs && node scripts/e2e-busqueda.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.0",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "pagefind": "^1.5.2",
     "typescript": "^5.9.0"
   },
   "allowScripts": {

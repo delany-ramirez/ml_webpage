@@ -17,9 +17,9 @@ const { eyebrow, titulo, numero, headings = [] } = Astro.props;
   <span class="eyebrow">{eyebrow}</span>
   <h1>
     {numero && <span class="num">{numero}</span>}
-    <span set:html={tituloHtml(titulo)} />
+    <span data-pagefind-meta="title" set:html={tituloHtml(titulo)} />
   </h1>
-  <div class="cab-meta">
+  <div class="cab-meta" data-pagefind-ignore>
     <slot />
   </div>
   <Pildoras headings={headings} />

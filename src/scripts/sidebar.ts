@@ -48,15 +48,20 @@ export function iniciarSidebar(): void {
 
   // --- drawer móvil ---
   const fondo = document.querySelector<HTMLElement>("[data-sidebar-fondo]");
+  let origenFoco: HTMLElement | null = null;
   const abrir = () => {
+    origenFoco = document.activeElement as HTMLElement;
     sidebar.classList.add("abierto");
     if (fondo) fondo.hidden = false;
     document.body.style.overflow = "hidden";
+    sidebar.querySelector<HTMLElement>("[data-sidebar-cerrar]")?.focus();
   };
   const cerrar = () => {
+    if (!sidebar.classList.contains("abierto")) return;
     sidebar.classList.remove("abierto");
     if (fondo) fondo.hidden = true;
     document.body.style.overflow = "";
+    origenFoco?.focus();
   };
   document.querySelectorAll("[data-sidebar-abrir]").forEach((b) => b.addEventListener("click", abrir));
   document.querySelectorAll("[data-sidebar-cerrar]").forEach((b) => b.addEventListener("click", cerrar));

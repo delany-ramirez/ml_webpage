@@ -9,7 +9,7 @@ const nombres: Record<string, string> = {};
 for (const ls of porModulo.values()) for (const l of ls) nombres[claveProgreso(l)] = tituloTexto(l.titulo);
 ---
 
-<Curso title="Tu progreso" description="Progreso del curso guardado en este navegador; expórtalo para continuar en otro dispositivo.">
+<Curso title="Tu progreso" description="Progreso del curso guardado en este navegador; expórtalo para continuar en otro dispositivo." tipo="Progreso">
   <IndiceCurso />
   <script is:inline type="application/json" id="nombres-lecciones" set:html={JSON.stringify(nombres)} />
   <Cabecera eyebrow="Curso" titulo="Tu progreso">
@@ -62,7 +62,7 @@ for (const ls of porModulo.values()) for (const l of ls) nombres[claveProgreso(l
     <span class="eyebrow">Llevar el progreso a otro dispositivo</span>
     <div class="dos">
       <div>
-        <h3>Exportar</h3>
+        <h2>Exportar</h2>
         <p>Copia este código y guárdalo (o envíatelo). Contiene solo tus lecciones completadas y resultados de autoevaluación.</p>
         <textarea id="codigo-exportar" class="codigo" readonly rows="3" aria-label="Código de progreso"></textarea>
         <div class="acciones">
@@ -71,7 +71,7 @@ for (const ls of porModulo.values()) for (const l of ls) nombres[claveProgreso(l
         </div>
       </div>
       <div>
-        <h3>Restaurar</h3>
+        <h2>Restaurar</h2>
         <p>Pega un código exportado en otro navegador. Se <em>fusiona</em> con lo que ya tengas aquí; nada se pierde.</p>
         <textarea id="codigo-importar" class="codigo" rows="3" placeholder="MLDR1-…" aria-label="Código a restaurar"></textarea>
         <div class="acciones">
@@ -84,7 +84,7 @@ for (const ls of porModulo.values()) for (const l of ls) nombres[claveProgreso(l
 
   <section class="tarjeta peligro rise d3">
     <div>
-      <h3>Reiniciar</h3>
+      <h2>Reiniciar</h2>
       <p>Borra todo el progreso guardado en este navegador. No se puede deshacer (salvo que tengas un código exportado).</p>
     </div>
     <button type="button" class="btn btn-ghost btn-sm" id="btn-reiniciar">Reiniciar progreso</button>
@@ -162,7 +162,7 @@ for (const ls of porModulo.values()) for (const l of ls) nombres[claveProgreso(l
     border-radius: 14px;
     margin-bottom: 24px;
   }
-  .tarjeta h3 {
+  .tarjeta h2 {
     font-size: 17px;
     margin-bottom: 6px;
   }

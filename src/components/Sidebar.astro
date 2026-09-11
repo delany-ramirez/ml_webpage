@@ -11,6 +11,7 @@ import {
   ejerciciosPorModulo,
   modulosConQuiz,
   tituloHtml,
+  claveProgreso,
   nn,
 } from "../lib/curso";
 
@@ -37,6 +38,11 @@ const docsNav = [DOCS["docs/programa"], DOCS["modulo-0-instalacion/README"], DOC
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
+
+  <a href="/progreso/" class="sb-progreso" title="Ver y exportar tu progreso">
+    <span class="sb-progreso-txt"><span>Progreso</span><span data-progreso-texto>0 / 0 · 0%</span></span>
+    <span class="sb-barra"><span class="fill" data-progreso-global></span></span>
+  </a>
 
   <nav class="sb-docs" aria-label="Documentos del curso">
     {docsNav.map((d) => (
@@ -70,7 +76,7 @@ const docsNav = [DOCS["docs/programa"], DOCS["modulo-0-instalacion/README"], DOC
                 {ls.map((l) => (
                   <li>
                     <a href={l.ruta} class:list={["sb-leccion", { activo: l.id === activo }]} aria-current={l.id === activo ? "page" : undefined}>
-                      <span class="marca" data-marca={l.id} aria-hidden="true"></span>
+                      <span class="marca" data-marca={claveProgreso(l)} aria-hidden="true"></span>
                       <span class="sb-n">{nn(l.orden)}</span>
                       <span class="sb-t" set:html={tituloHtml(l.titulo)} />
                     </a>
@@ -128,6 +134,43 @@ const docsNav = [DOCS["docs/programa"], DOCS["modulo-0-instalacion/README"], DOC
   }
   .sb-cerrar {
     display: none;
+  }
+
+  .sb-progreso {
+    display: block;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .sb-progreso:hover {
+    border-color: var(--gold);
+  }
+  .sb-progreso-txt {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .sb-progreso-txt span:last-child {
+    color: var(--gold);
+  }
+  .sb-barra {
+    display: block;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--line-strong);
+    overflow: hidden;
+  }
+  .sb-barra .fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--gold);
+    transition: width 0.4s;
   }
 
   .sb-docs {

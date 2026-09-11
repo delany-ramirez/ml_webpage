@@ -96,7 +96,7 @@ ml_webpage/
 |---|---|---|---|
 | 0 | **Esqueleto** — repo, Astro, submodule, colecciones, `lib/curso.ts`, KaTeX/Shiki, layout base con tokens y toggle de tema, una lección real renderizada | ✅ hecha | |
 | 1 | **Navegación** — sidebar acordeón, índice de módulo, landing, programa, instalación, prev/next, píldoras + TOC, rutas de ejercicios y quiz formal, check anti-soluciones | ✅ hecha | |
-| 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ⬜ pendiente | |
+| 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ✅ hecha | |
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ⬜ pendiente | |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ⬜ pendiente | |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ⬜ pendiente | |
@@ -194,15 +194,35 @@ Decisiones y hallazgos:
   solo el proceso del puerto 4321.
 
 
-### ⬜ Fase 2 — Progreso
+### ✅ Fase 2 — Progreso (2026-09-11)
 
-- [ ] `src/scripts/progress.ts`: clave `ml.delanyr.dev/progress/v1`;
+- [x] `src/scripts/progress.ts`: clave `ml.delanyr.dev/progress/v1`;
       `{ completadas: string[], autoevaluacion: Record<id,{score,total,fecha}>, actualizado }`;
       `isDone`, `toggle`, `saveQuiz`, `summary()`, `exportar()` / `importar(code)`;
       evento `progress:change`. Referencia: `leogaviria/src/js/utils/storage.js`.
-- [ ] Sidebar y cabecera reaccionan al evento: check por lección, `N/M` por módulo, barra global.
-- [ ] Landing: progreso por módulo en las tarjetas.
-- [ ] `/progreso/`: resumen, *Copiar código*, *Restaurar desde código*, *Reiniciar* (confirmación).
+- [x] Sidebar y cabecera reaccionan al evento: check por lección, `N/M` por módulo, barra global.
+- [x] Landing: progreso por módulo en las tarjetas.
+- [x] `/progreso/`: resumen, *Copiar código*, *Restaurar desde código*, *Reiniciar* (confirmación).
+
+Resultado: `scripts/progress.ts` (datos: leer/marcar/alternar/guardarQuiz/reiniciar/
+exportar/importar) y `scripts/progress-ui.ts` (pinta el DOM y escucha `progress:change` y
+`storage`). Contrato de marcado documentado en la cabecera de `progress-ui.ts`:
+`[data-marca]`, `[data-completar]`, `[data-cuenta-modulo]`, `[data-progreso-modulo]`,
+`[data-porcentaje-modulo]`, `[data-progreso-global]`, `[data-progreso-texto]` y el JSON
+`#curso-indice` (componente `IndiceCurso.astro`) para páginas sin temario.
+- Clave de progreso: `"N/slug"` (`claveProgreso()` en `lib/curso.ts`), no el id largo de la
+  colección — el código exportado queda corto (≈10 chars por lección).
+- Código exportado: `MLDR1-` + base64url de `{c, q, t}`; `importar()` fusiona (unión de
+  completadas, mejor puntaje por quiz) y devuelve `null` si el prefijo o el JSON no valen.
+- `BotonCompletar.astro` aparece dos veces en la lección (cabecera y bloque de cierre con
+  enlace a la siguiente); `/progreso/` permite alternar cualquier lección desde la lista.
+- **Prueba e2e sin dependencias**: `scripts/e2e-progreso.mjs` lanza Chrome headless por CDP
+  contra `npm run preview` y verifica 17 aserciones (marcar, persistencia entre páginas,
+  contadores del sidebar/landing, exportar, reiniciar, importar válido e inválido). Alias
+  `npm run e2e`. Reutilizable para la Fase 3 (quiz) y 4.
+- El MCP de Chrome DevTools se cayó al matar `node.exe`; el e2e por CDP lo reemplaza sin
+  depender de él.
+
 
 ### ⬜ Fase 3 — Interactivos
 

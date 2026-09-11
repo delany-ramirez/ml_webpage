@@ -11,7 +11,8 @@
     "postbuild": "node scripts/verificar-sin-soluciones.mjs",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check",
+    "e2e": "node scripts/e2e-progreso.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.0",

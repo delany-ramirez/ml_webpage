@@ -1,5 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
+import IndiceCurso from "../components/IndiceCurso.astro";
 import { MODULOS, leccionesPorModulo, ejerciciosPorModulo, modulosConQuiz } from "../lib/curso";
 
 const porModulo = await leccionesPorModulo();
@@ -10,6 +11,7 @@ const primera = porModulo.get(1)?.[0];
 ---
 
 <Base>
+  <IndiceCurso />
   <main class="wrap">
     <section class="hero">
       <div class="hero-txt">
@@ -34,6 +36,7 @@ const primera = porModulo.get(1)?.[0];
         <div class="row"><span class="k">ritmo</span><span class="v">2 sesiones / semana · 7 semanas</span></div>
         <div class="row"><span class="k">módulos</span><span class="v">{MODULOS.length}</span></div>
         <div class="row"><span class="k">lecciones</span><span class="v g">{totalLecciones} publicadas</span></div>
+        <div class="row"><span class="k">tu progreso</span><span class="v"><a href="/progreso/" data-progreso-texto>0 / 0 · 0%</a></span></div>
         <div class="row"><span class="k">lenguaje</span><span class="v">Python 3.11</span></div>
         <div class="row"><span class="k">stack</span><span class="v">scikit-learn · PyTorch · MLflow · FastAPI</span></div>
         <div class="row"><span class="k">evaluación</span><span class="v">proyecto integrador + quiz por módulo</span></div>
@@ -57,7 +60,7 @@ const primera = porModulo.get(1)?.[0];
             <a href={`/modulo/${m.numero}/`} class:list={["mod", { vacio }]}>
               <div class="mod-top">
                 <span class="idx">M{m.numero}</span>
-                <span class="ses">S{s0}{s1 !== s0 ? `–${s1}` : ""} · {m.horas} h</span>
+                <span class="ses">S{s0}{s1 !== s0 ? `–${s1}` : ""} · {m.horas} h{!vacio && <> · <span class="pct" data-porcentaje-modulo={m.numero}>0%</span></>}</span>
               </div>
               <h3>{m.nombre}</h3>
               <div class="mod-foot">
@@ -265,6 +268,16 @@ const primera = porModulo.get(1)?.[0];
   }
   .mod .ses {
     color: var(--muted-2);
+  }
+  .mod .pct {
+    color: var(--gold);
+  }
+  .card-profile .v a {
+    color: var(--text);
+    border-bottom: 1px dotted var(--muted-2);
+  }
+  .card-profile .v a:hover {
+    color: var(--gold);
   }
   .mod h3 {
     font-size: 18px;

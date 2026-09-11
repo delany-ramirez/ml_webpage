@@ -2,7 +2,7 @@
 import { getCollection, render } from "astro:content";
 import Curso from "../../../layouts/Curso.astro";
 import Cabecera from "../../../components/Cabecera.astro";
-import { MODULOS, parseLeccion, lecciones, ejerciciosDe, modulosConQuiz, tituloHtml, nn } from "../../../lib/curso";
+import { MODULOS, parseLeccion, lecciones, ejerciciosDe, modulosConQuiz, tituloHtml, claveProgreso, nn } from "../../../lib/curso";
 
 export async function getStaticPaths() {
   const readmes = await getCollection("modulos");
@@ -46,12 +46,16 @@ const nextMod = i < MODULOS.length - 1 ? MODULOS[i + 1] : null;
 
   {!vacio && (
     <section class="ruta rise">
-      <span class="eyebrow">Ruta del módulo</span>
+      <div class="ruta-head">
+        <span class="eyebrow">Ruta del módulo</span>
+        <span class="ruta-pct" data-porcentaje-modulo={modulo.numero}>0%</span>
+      </div>
+      <div class="ruta-barra" aria-hidden="true"><span class="fill" data-progreso-modulo={modulo.numero}></span></div>
       <ol class="ruta-lista">
         {propias.map((l) => (
           <li>
             <a href={l.ruta}>
-              <span class="marca" data-marca={l.id} aria-hidden="true"></span>
+              <span class="marca" data-marca={claveProgreso(l)} aria-hidden="true"></span>
               <span class="n">{nn(l.orden)}</span>
               <span class="t" set:html={tituloHtml(l.titulo)} />
               <span class="s">S{l.sesion}</span>
@@ -90,6 +94,30 @@ const nextMod = i < MODULOS.length - 1 ? MODULOS[i + 1] : null;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 14px;
+  }
+  .ruta-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .ruta-pct {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--gold);
+  }
+  .ruta-barra {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--line-strong);
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .ruta-barra .fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--gold);
+    transition: width 0.4s;
   }
   .ruta-lista {
     list-style: none;

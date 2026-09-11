@@ -204,6 +204,11 @@ export function etiquetaSesion(l: Pick<Leccion, "sesion">): string {
   return l.sesion.includes("–") ? `Sesiones ${l.sesion}` : `Sesión ${l.sesion}`;
 }
 
+/** Clave corta y estable de una lección para el progreso en localStorage: "3/02-descenso-gradiente". */
+export function claveProgreso(l: Pick<Leccion, "modulo" | "slug">): string {
+  return `${l.modulo.numero}/${l.slug}`;
+}
+
 export function nn(n: number): string {
   return String(n).padStart(2, "0");
 }

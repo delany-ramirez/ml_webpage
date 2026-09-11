@@ -1,0 +1,114 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../../../../layouts/Base.astro";
+import { parseLeccion, prevNext, tituloHtml, tituloTexto, etiquetaSesion, nn } from "../../../../lib/curso";
+
+export async function getStaticPaths() {
+  const entradas = await getCollection("teoria");
+  return entradas.flatMap((entry) => {
+    const leccion = parseLeccion(entry, "teoria");
+    if (!leccion) return [];
+    return [{ params: { n: String(leccion.modulo.numero), slug: leccion.slug }, props: { entry, leccion } }];
+  });
+}
+
+const { entry, leccion } = Astro.props;
+const { Content } = await render(entry);
+const { prev, next } = await prevNext(leccion.id);
+const sesion = etiquetaSesion(leccion);
+---
+
+<Base title={tituloTexto(leccion.titulo)}>
+  <main class="wrap">
+    <header class="leccion-head rise">
+      <span class="eyebrow">Módulo {leccion.modulo.numero} · {sesion}</span>
+      <h1 set:html={`<span class="num">${nn(leccion.orden)}</span> ${tituloHtml(leccion.titulo)}`} />
+      <div class="leccion-meta">
+        <span class="chip gold">{leccion.modulo.corto}</span>
+        {leccion.tema && <span class="tema">{leccion.tema}</span>}
+      </div>
+    </header>
+
+    <article class="prose rise d1">
+      <Content />
+    </article>
+
+    <nav class="prevnext rise d2" aria-label="Lección anterior y siguiente">
+      {prev ? (
+        <a href={prev.ruta} class="pn">
+          <span class="lbl">← Anterior</span>
+          <span class="ttl" set:html={tituloHtml(prev.titulo)} />
+        </a>
+      ) : <span />}
+      {next ? (
+        <a href={next.ruta} class="pn der">
+          <span class="lbl">Siguiente →</span>
+          <span class="ttl" set:html={tituloHtml(next.titulo)} />
+        </a>
+      ) : <span />}
+    </nav>
+  </main>
+</Base>
+
+<style>
+  .leccion-head h1 :global(.num) {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: var(--gold);
+    font-size: 0.6em;
+    vertical-align: 0.35em;
+    margin-right: 0.35em;
+    letter-spacing: 0;
+  }
+  .prevnext {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    max-width: 72ch;
+  }
+  .pn {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .pn:hover {
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+  .pn.der {
+    text-align: right;
+  }
+  .pn .lbl {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+  }
+  .pn .ttl {
+    font-size: 14.5px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .pn .ttl :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    color: var(--gold);
+  }
+  @media (max-width: 560px) {
+    .prevnext {
+      grid-template-columns: 1fr;
+    }
+    .pn.der {
+      text-align: left;
+    }
+  }
+</style>

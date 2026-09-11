@@ -1,146 +1,353 @@
 ---
-// Índice provisional (Fase 0): lista plana de lecciones para navegar.
-// La landing definitiva llega en la Fase 1.
 import Base from "../layouts/Base.astro";
-import { MODULOS, leccionesPorModulo, tituloHtml, etiquetaSesion, nn } from "../lib/curso";
+import { MODULOS, leccionesPorModulo, ejerciciosPorModulo, modulosConQuiz } from "../lib/curso";
 
 const porModulo = await leccionesPorModulo();
+const ejercicios = await ejerciciosPorModulo();
+const conQuiz = await modulosConQuiz();
+const totalLecciones = [...porModulo.values()].reduce((n, ls) => n + ls.length, 0);
+const primera = porModulo.get(1)?.[0];
 ---
 
 <Base>
   <main class="wrap">
-    <section class="hero rise">
-      <span class="eyebrow">Maestría en Ingeniería de Sistemas y Computación · UTP</span>
-      <h1>Machine <span class="g">Learning</span></h1>
-      <p class="lede">
-        48 horas, 14 sesiones, 6 módulos. Teoría con las matemáticas necesarias, notebooks
-        ejecutables y un proyecto integrador que termina desplegado como API.
-      </p>
+    <section class="hero">
+      <div class="hero-txt">
+        <span class="status rise">
+          <span class="pulse"></span>
+          Maestría en Ingeniería de Sistemas y Computación · UTP
+        </span>
+        <h1 class="rise d1">Machine <span class="g">Learning</span><br /><span class="flow">de la formulación al despliegue</span></h1>
+        <p class="lede rise d2">
+          Un curso para formular, construir, evaluar y desplegar soluciones de Machine Learning
+          sobre datos reales: con las matemáticas que hacen falta, notebooks ejecutables y un
+          proyecto que termina como una API trazable.
+        </p>
+        <div class="hero-actions rise d3">
+          <a href="/instalacion/" class="btn btn-primary">Empieza aquí: instala el entorno</a>
+          {primera && <a href={primera.ruta} class="btn btn-ghost">Ir a la primera lección</a>}
+        </div>
+      </div>
+      <div class="card-profile rise d2" aria-label="Ficha del curso">
+        <span class="hd">// ficha del curso</span>
+        <div class="row"><span class="k">intensidad</span><span class="v">48 h · 14 sesiones</span></div>
+        <div class="row"><span class="k">ritmo</span><span class="v">2 sesiones / semana · 7 semanas</span></div>
+        <div class="row"><span class="k">módulos</span><span class="v">{MODULOS.length}</span></div>
+        <div class="row"><span class="k">lecciones</span><span class="v g">{totalLecciones} publicadas</span></div>
+        <div class="row"><span class="k">lenguaje</span><span class="v">Python 3.11</span></div>
+        <div class="row"><span class="k">stack</span><span class="v">scikit-learn · PyTorch · MLflow · FastAPI</span></div>
+        <div class="row"><span class="k">evaluación</span><span class="v">proyecto integrador + quiz por módulo</span></div>
+        <div class="row"><span class="k">docente</span><span class="v">Délany Ramírez del Río</span></div>
+      </div>
     </section>
 
-    <section class="modulos rise d1">
-      {MODULOS.map((m) => {
-        const lecciones = porModulo.get(m.numero) ?? [];
-        return (
-          <div class="modulo">
-            <div class="mod-head">
-              <span class="chip gold">Módulo {m.numero}</span>
-              <h2>{m.nombre}</h2>
-              <span class="note">
-                Sesiones {m.sesiones[0]}{m.sesiones[1] !== m.sesiones[0] ? `–${m.sesiones[1]}` : ""} · {m.horas} h
-              </span>
-            </div>
-            {lecciones.length === 0 ? (
-              <p class="vacio">En construcción.</p>
-            ) : (
-              <ol class="lista">
-                {lecciones.map((l) => (
-                  <li>
-                    <a href={l.ruta}>
-                      <span class="n">{nn(l.orden)}</span>
-                      <span class="t" set:html={tituloHtml(l.titulo)} />
-                      <span class="s">{etiquetaSesion(l)}</span>
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-        );
-      })}
+    <section class="block">
+      <div class="head">
+        <span class="eyebrow">Programa</span>
+        <h2>Seis módulos, una sola ruta</h2>
+        <p>De los fundamentos al despliegue. Cada módulo cierra con ejercicios y un quiz; el proyecto integrador crece con cada uno.</p>
+      </div>
+      <div class="mods">
+        {MODULOS.map((m) => {
+          const ls = porModulo.get(m.numero) ?? [];
+          const ejs = ejercicios.get(m.numero) ?? [];
+          const vacio = ls.length === 0;
+          const [s0, s1] = m.sesiones;
+          return (
+            <a href={`/modulo/${m.numero}/`} class:list={["mod", { vacio }]}>
+              <div class="mod-top">
+                <span class="idx">M{m.numero}</span>
+                <span class="ses">S{s0}{s1 !== s0 ? `–${s1}` : ""} · {m.horas} h</span>
+              </div>
+              <h3>{m.nombre}</h3>
+              <div class="mod-foot">
+                {vacio ? (
+                  <span class="chip">En construcción</span>
+                ) : (
+                  <>
+                    <span class="chip gold">{ls.length} lecciones</span>
+                    {ejs.length > 0 && <span class="chip">{ejs.length} ejercicios</span>}
+                    {conQuiz.has(m.numero) && <span class="chip">Quiz</span>}
+                  </>
+                )}
+              </div>
+              <div class="barra" aria-hidden="true"><span class="fill" data-progreso-modulo={m.numero}></span></div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="head">
+        <span class="eyebrow">Cómo trabajar el curso</span>
+        <h2>Tres pasos para empezar</h2>
+      </div>
+      <div class="pasos">
+        <a href="/instalacion/" class="paso">
+          <span class="n">01</span>
+          <h3>Instala el entorno</h3>
+          <p>Git, Miniconda, el entorno <code>ml-curso</code> y VS Code, con un script que verifica que todo quedó bien. 45–90 min, antes de la primera sesión.</p>
+        </a>
+        <a href="/programa/" class="paso">
+          <span class="n">02</span>
+          <h3>Lee el programa</h3>
+          <p>Malla de 14 sesiones, objetivos y evaluación. Es la fuente de verdad del curso: si algo contradice al programa, manda el programa.</p>
+        </a>
+        <a href="/modulo/1/" class="paso">
+          <span class="n">03</span>
+          <h3>Empieza el módulo 1</h3>
+          <p>Cada lección tiene teoría con LaTeX, notebooks de intuición y aplicados, ejercicios y un quiz de cierre. Marca tu avance a medida que avanzas.</p>
+        </a>
+      </div>
     </section>
   </main>
 </Base>
 
 <style>
   .hero {
-    padding: 72px 0 48px;
+    padding: 84px 0 72px;
+    display: grid;
+    grid-template-columns: 1.35fr 0.9fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .status {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 26px;
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    padding: 6px 14px;
+  }
+  .status .pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+    position: relative;
+  }
+  .status .pulse::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: var(--ok);
+    opacity: 0.35;
+    animation: pulse 2.4s ease-out infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.6); opacity: 0.5; }
+    100% { transform: scale(2.2); opacity: 0; }
   }
   .hero h1 {
-    font-size: clamp(40px, 6vw, 68px);
-    margin: 18px 0 20px;
+    font-size: clamp(38px, 5.6vw, 62px);
+    margin-bottom: 22px;
   }
   .hero h1 .g {
     color: var(--gold);
   }
-  .hero .lede {
-    font-size: 18px;
-    color: var(--muted);
-    max-width: 52ch;
+  .hero h1 .flow {
+    color: var(--muted-2);
+    font-weight: 400;
+    font-size: 0.6em;
   }
-  .modulos {
+  .hero .lede {
+    font-size: 17.5px;
+    color: var(--muted);
+    max-width: 44ch;
+    margin-bottom: 34px;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .card-profile {
+    background: linear-gradient(160deg, var(--surface), var(--surface-2));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    box-shadow: var(--shadow);
+  }
+  .card-profile .hd {
+    color: var(--muted-2);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .card-profile .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .card-profile .row:last-child {
+    border-bottom: 0;
+  }
+  .card-profile .k {
+    color: var(--muted-2);
+    white-space: nowrap;
+  }
+  .card-profile .v {
+    color: var(--text);
+    text-align: right;
+  }
+  .card-profile .v.g {
+    color: var(--gold);
+  }
+  @media (max-width: 860px) {
+    .hero {
+      grid-template-columns: 1fr;
+      gap: 36px;
+      padding: 56px 0 48px;
+    }
+  }
+
+  section.block {
+    padding: 64px 0;
+    border-top: 1px solid var(--line);
+  }
+  .head {
+    margin-bottom: 36px;
+    max-width: 620px;
+  }
+  .head h2 {
+    font-size: clamp(26px, 3.6vw, 36px);
+    margin: 14px 0 10px;
+  }
+  .head p {
+    color: var(--muted);
+    font-size: 15.5px;
+  }
+
+  .mods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .mod {
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    padding-bottom: 40px;
-  }
-  .modulo {
+    gap: 12px;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 24px 26px;
+    padding: 22px 22px 18px;
+    transition: border-color 0.25s, transform 0.25s;
+    position: relative;
   }
-  .mod-head {
+  .mod:hover {
+    border-color: var(--gold);
+    transform: translateY(-3px);
+  }
+  .mod.vacio {
+    opacity: 0.7;
+  }
+  .mod-top {
     display: flex;
-    align-items: baseline;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin-bottom: 14px;
-  }
-  .mod-head h2 {
-    font-size: 20px;
-  }
-  .vacio {
-    color: var(--muted-2);
+    justify-content: space-between;
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 12px;
   }
-  .lista {
-    list-style: none;
+  .mod .idx {
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 5px;
+    padding: 2px 7px;
+  }
+  .mod .ses {
+    color: var(--muted-2);
+  }
+  .mod h3 {
+    font-size: 18px;
+    flex: 1;
+  }
+  .mod-foot {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 6px;
   }
-  .lista a {
+  .barra {
+    height: 3px;
+    border-radius: 3px;
+    background: var(--line);
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .barra .fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--gold);
+    transition: width 0.4s;
+  }
+  @media (max-width: 900px) {
+    .mods {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (max-width: 560px) {
+    .mods {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pasos {
     display: grid;
-    grid-template-columns: 34px 1fr auto;
-    gap: 12px;
-    align-items: baseline;
-    padding: 10px 8px;
-    border-radius: 8px;
-    border-bottom: 1px solid var(--line);
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .paso {
+    padding: 28px 26px;
+    border-right: 1px solid var(--line);
     transition: background 0.2s;
   }
-  .lista li:last-child a {
-    border-bottom: 0;
+  .paso:last-child {
+    border-right: 0;
   }
-  .lista a:hover {
+  .paso:hover {
     background: var(--surface-2);
   }
-  .lista .n {
+  .paso .n {
     font-family: var(--font-mono);
+    font-size: 12px;
     color: var(--gold);
-    font-size: 13px;
+    letter-spacing: 0.12em;
   }
-  .lista .t {
-    font-size: 15px;
+  .paso h3 {
+    font-size: 19px;
+    margin: 10px 0 10px;
   }
-  .lista .t :global(code) {
+  .paso p {
+    font-size: 14.5px;
+    color: var(--muted);
+  }
+  .paso code {
     font-family: var(--font-mono);
     font-size: 0.9em;
     color: var(--gold);
   }
-  .lista .s {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--muted-2);
-    white-space: nowrap;
-  }
-  @media (max-width: 560px) {
-    .lista a {
-      grid-template-columns: 30px 1fr;
+  @media (max-width: 760px) {
+    .pasos {
+      grid-template-columns: 1fr;
     }
-    .lista .s {
-      display: none;
+    .paso {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .paso:last-child {
+      border-bottom: 0;
     }
   }
 </style>

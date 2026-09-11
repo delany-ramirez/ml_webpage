@@ -7,35 +7,8 @@
  */
 import { getCollection, type CollectionEntry } from "astro:content";
 
-// ---------------------------------------------------------------------------
-// Malla del curso (espejo de content/docs/programa.md — fuente de verdad)
-// ---------------------------------------------------------------------------
-
-export interface Modulo {
-  numero: number;
-  carpeta: string;
-  nombre: string;
-  corto: string;
-  sesiones: [number, number];
-  horas: number;
-}
-
-export const MODULOS: Modulo[] = [
-  { numero: 1, carpeta: "modulo-1-fundamentos-ciclo-vida", nombre: "Fundamentos y ciclo de vida", corto: "Fundamentos", sesiones: [1, 3], horas: 10.5 },
-  { numero: 2, carpeta: "modulo-2-datos-caracteristicas", nombre: "Datos: preprocesamiento e ingeniería de características", corto: "Datos", sesiones: [4, 5], horas: 7 },
-  { numero: 3, carpeta: "modulo-3-regresion-evaluacion", nombre: "Supervisado I: regresión y evaluación", corto: "Regresión", sesiones: [6, 8], horas: 10.5 },
-  { numero: 4, carpeta: "modulo-4-clasificacion-ensambles", nombre: "Supervisado II: clasificación y ensambles", corto: "Clasificación", sesiones: [9, 11], horas: 10.5 },
-  { numero: 5, carpeta: "modulo-5-no-supervisado-deep-learning", nombre: "No supervisado y deep learning", corto: "No supervisado", sesiones: [12, 13], horas: 7 },
-  { numero: 6, carpeta: "modulo-6-mlops-despliegue", nombre: "MLOps: trazabilidad y despliegue", corto: "MLOps", sesiones: [14, 14], horas: 3.5 },
-];
-
-export function moduloPorNumero(n: number): Modulo | undefined {
-  return MODULOS.find((m) => m.numero === n);
-}
-
-export function moduloPorCarpeta(carpeta: string): Modulo | undefined {
-  return MODULOS.find((m) => m.carpeta === carpeta);
-}
+import { MODULOS, moduloPorCarpeta, moduloPorNumero, DOCS, type Modulo } from "./rutas";
+export { MODULOS, moduloPorCarpeta, moduloPorNumero, DOCS, type Modulo };
 
 // ---------------------------------------------------------------------------
 // Parseo de una entrada
@@ -60,6 +33,10 @@ export interface Leccion {
   tema: string | null;
   /** Tiempo estimado si aparece en la línea de metadatos, p. ej. "75 min" */
   duracion: string | null;
+  /** Ejercicios: "Con código" | "Sin código" */
+  modalidad: string | null;
+  /** Quizzes: número de preguntas */
+  preguntas: number | null;
   /** Ruta pública */
   ruta: string;
 }
@@ -67,6 +44,8 @@ export interface Leccion {
 const RE_H1 = /^#\s+(.+?)\s*$/m;
 const RE_META = /^\*\*(?:Módulo\s+\d+\s+·\s+)?Sesi(?:ón|ones)\s+([\d–-]+)\*\*(?:\s*—\s*(.+?))?(?:\s*·.*)?$/im;
 const RE_TIEMPO = /Tiempo (?:estimado|sugerido):\s*\*\*([^*]+)\*\*/i;
+const RE_MODALIDAD = /·\s*((?:Con|Sin) código)/i;
+const RE_PREGUNTAS = /(\d+)\s+preguntas/i;
 
 function quitarPrefijoNumero(titulo: string): string {
   // "02 · Título" | "Ejercicio 01 · Título" | "Quiz · Módulo 3 — Título"
@@ -108,6 +87,8 @@ export function parseLeccion(
   const h1 = cabecera.match(RE_H1)?.[1] ?? slug;
   const meta = cabecera.match(RE_META);
   const duracion = cabecera.match(RE_TIEMPO)?.[1]?.trim() ?? null;
+  const modalidad = cabecera.match(RE_MODALIDAD)?.[1] ?? null;
+  const preguntas = cabecera.match(RE_PREGUNTAS)?.[1];
 
   return {
     id: entry.id,
@@ -119,6 +100,8 @@ export function parseLeccion(
     sesion: meta?.[1]?.replace("-", "–") ?? null,
     tema: meta?.[2]?.trim() ?? null,
     duracion: entry.data.duracion ?? duracion,
+    modalidad,
+    preguntas: preguntas ? parseInt(preguntas, 10) : null,
     ruta: rutaPublica(tipo, modulo, slug),
   };
 }
@@ -145,6 +128,43 @@ export async function ejerciciosDe(numeroModulo: number): Promise<Leccion[]> {
     .map((e) => parseLeccion(e, "ejercicios"))
     .filter((l): l is Leccion => l !== null && l.modulo.numero === numeroModulo)
     .sort(porModuloYOrden);
+}
+
+export async function quizDe(numeroModulo: number): Promise<{ entry: CollectionEntry<"quizzes">; leccion: Leccion } | null> {
+  const entradas = await getCollection("quizzes");
+  for (const entry of entradas) {
+    const l = parseLeccion(entry, "quizzes");
+    if (l && l.modulo.numero === numeroModulo) return { entry, leccion: l };
+  }
+  return null;
+}
+
+export async function ejerciciosPorModulo(): Promise<Map<number, Leccion[]>> {
+  const entradas = await getCollection("ejercicios");
+  const mapa = new Map<number, Leccion[]>();
+  for (const m of MODULOS) mapa.set(m.numero, []);
+  for (const e of entradas) {
+    const l = parseLeccion(e, "ejercicios");
+    if (l) mapa.get(l.modulo.numero)!.push(l);
+  }
+  for (const lista of mapa.values()) lista.sort(porModuloYOrden);
+  return mapa;
+}
+
+export async function modulosConQuiz(): Promise<Set<number>> {
+  const entradas = await getCollection("quizzes");
+  const set = new Set<number>();
+  for (const e of entradas) {
+    const l = parseLeccion(e, "quizzes");
+    if (l) set.add(l.modulo.numero);
+  }
+  return set;
+}
+
+/** Documento suelto (programa, instalación, proyecto, recursos) por id de colección. */
+export function docDeEntrada(entry: CollectionEntry<"docs">) {
+  const clave = Object.keys(DOCS).find((k) => k.toLowerCase() === entry.id.toLowerCase());
+  return clave ? DOCS[clave] : null;
 }
 
 export async function leccionesPorModulo(): Promise<Map<number, Leccion[]>> {

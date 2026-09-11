@@ -95,7 +95,7 @@ ml_webpage/
 | Fase | Contenido | Estado | Commit |
 |---|---|---|---|
 | 0 | **Esqueleto** — repo, Astro, submodule, colecciones, `lib/curso.ts`, KaTeX/Shiki, layout base con tokens y toggle de tema, una lección real renderizada | ✅ hecha | |
-| 1 | **Navegación** — sidebar acordeón, índice de módulo, landing, programa, instalación, prev/next, píldoras + TOC, rutas de ejercicios y quiz formal, check anti-soluciones | ⬜ pendiente | |
+| 1 | **Navegación** — sidebar acordeón, índice de módulo, landing, programa, instalación, prev/next, píldoras + TOC, rutas de ejercicios y quiz formal, check anti-soluciones | ✅ hecha | |
 | 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ⬜ pendiente | |
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ⬜ pendiente | |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ⬜ pendiente | |
@@ -151,23 +151,48 @@ Notas para las fases siguientes:
   el plugin que las convierte en enlaces queda en la Fase 6.
 - `src/pages/index.astro` es provisional (lista plana); se reemplaza en la Fase 1.
 
-### ⬜ Fase 1 — Navegación
+### ✅ Fase 1 — Navegación (2026-09-11)
 
-- [ ] `Leccion.astro`: grid sidebar / cuerpo / TOC (TOC solo ≥ 1280 px).
-- [ ] `Sidebar.astro`: acordeón por módulo (abierto el activo), lista de lecciones con
+- [x] `Leccion.astro`: grid sidebar / cuerpo / TOC (TOC solo ≥ 1280 px).
+- [x] `Sidebar.astro`: acordeón por módulo (abierto el activo), lista de lecciones con
       indicador de completada (placeholder hasta Fase 2), colapsable, drawer en móvil, estado
       en `localStorage`. Referencia: `renderSidebar()` en `leogaviria/src/js/app.js`.
-- [ ] Cabecera de lección: eyebrow `MÓDULO N · SESIÓN S`, chips Núcleo/Opcional (mapeo de ✅/🔵
+- [x] Cabecera de lección: eyebrow `MÓDULO N · SESIÓN S`, chips Núcleo/Opcional (mapeo de ✅/🔵
       del README del módulo), botón *Marcar como completada* (placeholder).
-- [ ] Píldoras de sección (H2) + TOC derecho con scroll-spy.
-- [ ] Prev/Next con `prevNext()` de `lib/curso.ts`.
-- [ ] `/modulo/[n]/`: README del módulo + tablas generadas (teoría → rutas internas; notebooks
+- [x] Píldoras de sección (H2) + TOC derecho con scroll-spy.
+- [x] Prev/Next con `prevNext()` de `lib/curso.ts`.
+- [x] `/modulo/[n]/`: README del módulo + tablas generadas (teoría → rutas internas; notebooks
       → GitHub + Colab; ejercicios → rutas internas; quiz formal → ruta interna).
-- [ ] `/`, `/programa/`, `/instalacion/`, `/proyecto-integrador/`, `/recursos/`.
-- [ ] `/modulo/[n]/ejercicios/[slug]/` y `/modulo/[n]/quiz/` (aviso: "se entrega al docente").
-- [ ] `scripts/verificar-sin-soluciones.mjs` en `postbuild`: falla si `dist/` contiene rutas
+- [x] `/`, `/programa/`, `/instalacion/`, `/proyecto-integrador/`, `/recursos/`.
+- [x] `/modulo/[n]/ejercicios/[slug]/` y `/modulo/[n]/quiz/` (aviso: "se entrega al docente").
+- [x] `scripts/verificar-sin-soluciones.mjs` en `postbuild`: falla si `dist/` contiene rutas
       `-sol` o el texto "Material del docente".
-- [ ] Módulos sin contenido (5 y 6 hoy): estado "en construcción" en sidebar e índice.
+- [x] Módulos sin contenido (5 y 6 hoy): estado "en construcción" en sidebar e índice.
+
+Resultado: 48 páginas. Layout `src/layouts/Curso.astro` (tres columnas: temario · contenido ·
+TOC; dos columnas en 960–1279; drawer en <960 con barra "Temario"). Componentes `Sidebar`,
+`Toc` (scroll-spy en `scripts/toc.ts`), `Pildoras`, `Cabecera`, `PrevNext`. Rutas nuevas:
+`/modulo/[n]/`, `/modulo/[n]/ejercicios/[slug]/`, `/modulo/[n]/quiz/`, y `[...ruta].astro`
+para los documentos de `DOCS` (`/programa/`, `/instalacion/`, `/instalacion/resumen/`,
+`/proyecto-integrador/`, `/recursos/`). `postbuild` ejecuta el check anti-soluciones.
+Decisiones y hallazgos:
+- `src/lib/rutas.ts` (sin `astro:content`) concentra `MODULOS`, `DOCS` y
+  `destinoDeContenido()`; `curso.ts` lo reexporta. Así el plugin remark puede usarlo.
+- **`remark-enlaces-contenido.ts`** (adelantado de la Fase 6): reescribe los enlaces
+  relativos del contenido — teoría/ejercicios/quiz/README → ruta del sitio; notebooks, datos y
+  demás archivos → GitHub (`blob`/`tree`); `*-sol.md` → texto plano. Los READMEs de módulo se
+  renderizan tal cual y sus tablas de materiales quedan enlazadas sin generar nada a mano.
+  Queda para la Fase 6 el caso de las referencias en backticks sin enlace (`01-x.md`).
+- Chips Núcleo/Opcional por lección: **descartado**. El README clasifica por sesión, no por
+  archivo; no hay forma fiable de derivarlo. Si se quiere, va como frontmatter `tipo:` en el
+  contenido (el schema ya lo acepta).
+- El id del loader `glob` normaliza `README.md` → `readme`; `docDeEntrada()` compara sin
+  mayúsculas.
+- El drawer móvil es `position: fixed` dentro de `.wrap` (que tiene `z-index: 1`); hay que
+  anular ese z-index en `.curso-grid` o el drawer queda bajo la nav.
+- Al detener el preview no usar `taskkill node.exe` (mata también el MCP de Chrome); matar
+  solo el proceso del puerto 4321.
+
 
 ### ⬜ Fase 2 — Progreso
 

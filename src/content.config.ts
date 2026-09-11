@@ -46,6 +46,7 @@ const docs = defineCollection({
     base: BASE,
     pattern: [
       "docs/programa.md",
+      "docs/guia-entorno.md",
       "modulo-0-instalacion/README.md",
       "proyecto-integrador/README.md",
       "recursos/README.md",

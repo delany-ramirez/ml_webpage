@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import Curso from "../../../layouts/Curso.astro";
 import Cabecera from "../../../components/Cabecera.astro";
 import { parseLeccion, tituloTexto, etiquetaSesion } from "../../../lib/curso";
+import { modulosConAutoevaluacion } from "../../../lib/interactivos";
 
 export async function getStaticPaths() {
   const entradas = await getCollection("quizzes");
@@ -15,6 +16,7 @@ export async function getStaticPaths() {
 
 const { entry, leccion } = Astro.props;
 const { Content, headings } = await render(entry);
+const tieneAuto = (await modulosConAutoevaluacion()).has(leccion.modulo.numero);
 ---
 
 <Curso title={`Quiz · Módulo ${leccion.modulo.numero}`} activo={leccion.id} moduloActivo={leccion.modulo.numero} headings={headings}>
@@ -31,8 +33,12 @@ const { Content, headings } = await render(entry);
   <aside class="aviso rise">
     <strong>Cómo se responde.</strong> Este quiz es de respuesta abierta y se entrega al
     docente; se evalúa el razonamiento, no la extensión. La clave de respuestas es material del
-    docente y no se publica aquí. Para comprobar tu comprensión por tu cuenta, cada módulo
-    tendrá una <em>autoevaluación</em> interactiva de opción múltiple.
+    docente y no se publica aquí. Para comprobar tu comprensión por tu cuenta,
+    {tieneAuto ? (
+      <>usa la <a href={`/modulo/${leccion.modulo.numero}/autoevaluacion/`}>autoevaluación interactiva</a> del módulo.</>
+    ) : (
+      <>cada módulo tendrá una <em>autoevaluación</em> interactiva de opción múltiple.</>
+    )}
   </aside>
 
   <article class="prose rise d1">
@@ -53,5 +59,10 @@ const { Content, headings } = await render(entry);
   }
   .aviso strong {
     color: var(--text);
+  }
+  .aviso a {
+    color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 </style>

@@ -97,7 +97,7 @@ ml_webpage/
 | 0 | **Esqueleto** — repo, Astro, submodule, colecciones, `lib/curso.ts`, KaTeX/Shiki, layout base con tokens y toggle de tema, una lección real renderizada | ✅ hecha | |
 | 1 | **Navegación** — sidebar acordeón, índice de módulo, landing, programa, instalación, prev/next, píldoras + TOC, rutas de ejercicios y quiz formal, check anti-soluciones | ✅ hecha | |
 | 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ✅ hecha | |
-| 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ⬜ pendiente | |
+| 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ⬜ pendiente | |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ⬜ pendiente | |
 | 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ⬜ pendiente | |
@@ -224,21 +224,45 @@ exportar/importar) y `scripts/progress-ui.ts` (pinta el DOM y escucha `progress:
   depender de él.
 
 
-### ⬜ Fase 3 — Interactivos
+### ✅ Fase 3 — Interactivos (2026-09-11)
 
-- [ ] Schema Zod de autoevaluación en `content.config.ts` (loader `file`/`glob` sobre
+- [x] Schema Zod de autoevaluación en `content.config.ts` (loader `file`/`glob` sobre
       `src/data/autoevaluacion/*.json`): `{ id, leccion?, pregunta, opciones[], correcta, explicacion }`.
-- [ ] `<Quiz>`: feedback inmediato, explicación, puntaje, reintentar, `saveQuiz()`.
+- [x] `<Quiz>`: feedback inmediato, explicación, puntaje, reintentar, `saveQuiz()`.
       Referencia de comportamiento: `leogaviria/widgets/programacion/u01_fundamentos_quiz.html`.
-- [ ] `/modulo/[n]/autoevaluacion/` + bloque *Comprueba* en cada lección con sus preguntas.
-- [ ] `public/widgets/_plantilla.html`: tokens del sitio, lectura de `?theme=`, listener
+- [x] `/modulo/[n]/autoevaluacion/` + bloque *Comprueba* en cada lección con sus preguntas.
+- [x] `public/widgets/_plantilla.html`: tokens del sitio, lectura de `?theme=`, listener
       `postMessage {type:"THEME_CHANGE"}`, sin dependencias externas.
-- [ ] `<WidgetFrame src title height>`: barra (título, pantalla completa, abrir aparte),
+- [x] `<WidgetFrame src title height>`: barra (título, pantalla completa, abrir aparte),
       `loading="lazy"`, ajuste de altura, envío del tema al cargar y al cambiar.
-- [ ] Primer widget: descenso del gradiente 1D/2D con tasa de aprendizaje (M3·S6).
-- [ ] `src/data/widgets.json` y bloque *Explora* en la lección; bloque *Practica* con los
+- [x] Primer widget: descenso del gradiente 1D/2D con tasa de aprendizaje (M3·S6).
+- [x] `src/data/widgets.json` y bloque *Explora* en la lección; bloque *Practica* con los
       ejercicios del módulo.
-- [ ] Una autoevaluación de ejemplo (M3, 8–10 preguntas) para probar el flujo completo.
+- [x] Una autoevaluación de ejemplo (M3, 8–10 preguntas) para probar el flujo completo.
+
+Resultado: 50 páginas. Nuevo: colección `autoevaluacion` (`src/data/autoevaluacion/modulo-N.json`,
+schema Zod con `id mN-NN`, `leccion` opcional, `correcta` dentro de rango), `lib/interactivos.ts`
+(autoevaluación por módulo/lección, `WIDGETS` validado desde `src/data/widgets.json`),
+componentes `Quiz`, `WidgetFrame`, `Complementos`; ruta `/modulo/[n]/autoevaluacion/`;
+`public/widgets/_plantilla.html` y `descenso-gradiente.html`; resultados de autoevaluación en
+`/progreso/`; chips «Autoevaluación» en temario e índice de módulo; el quiz formal enlaza a la
+autoevaluación cuando existe.
+- **Contrato de widget** (en la cabecera de `_plantilla.html`): tema inicial por `?theme=`, en
+  vivo por `postMessage {type:"THEME_CHANGE"}`; el widget reporta `WIDGET_HEIGHT` y el iframe
+  se ajusta (200–1200 px). `WidgetFrame` asigna el `src` en cliente con el tema actual para
+  evitar parpadeo; `sandbox="allow-scripts allow-same-origin"`.
+- **Claves de progreso de quizzes**: `autoevaluacion/N` (módulo completo) y
+  `autoevaluacion/N/slug` (bloque Comprueba de una lección). Se guarda solo si mejora.
+- **Practica**: muestra los ejercicios del módulo que citan la lección (`slug.md` en el
+  cuerpo); si ninguno la cita, muestra todos los del módulo.
+- Hallazgos: (1) los elementos creados en cliente (`.q-opcion`) no reciben el `data-astro-cid`
+  → sus estilos van como `.quiz :global(...)`; (2) `.btn { display:inline-flex }` ganaba al
+  atributo `hidden` → `[hidden] { display:none !important }` en `global.css`; (3) el grid del
+  curso ahora es `max-width: 1320px` para que la columna de contenido (≈760 px) dé espacio a
+  los widgets.
+- `npm run e2e` corre los dos e2e (progreso + interactivos: 17 + 22 aserciones).
+- Pendiente de contenido (Fase 6): autoevaluaciones de los módulos 1, 2 y 4; más widgets.
+
 
 ### ⬜ Fase 4 — Búsqueda y pulido
 

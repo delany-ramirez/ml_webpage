@@ -55,4 +55,25 @@ const docs = defineCollection({
   schema: metaOpcional,
 });
 
-export const collections = { teoria, ejercicios, quizzes, modulos, docs };
+// Autoevaluación interactiva (opción múltiple, autocalificada). Vive en ESTE repo, no en el
+// de contenido: es un complemento formativo, distinto del quiz formal de cada módulo.
+const pregunta = z.object({
+  id: z.string().regex(/^m\d-\d{2}$/, "id con forma mN-NN"),
+  /** slug de la lección a la que pertenece (bloque Comprueba); opcional */
+  leccion: z.string().optional(),
+  pregunta: z.string().min(10),
+  opciones: z.array(z.string().min(1)).min(2).max(6),
+  /** índice (base 0) de la opción correcta */
+  correcta: z.number().int().min(0),
+  explicacion: z.string().min(10),
+}).refine((q) => q.correcta < q.opciones.length, { message: "correcta fuera de rango" });
+
+const autoevaluacion = defineCollection({
+  loader: glob({ base: "./src/data/autoevaluacion", pattern: "modulo-*.json" }),
+  schema: z.object({
+    modulo: z.number().int().min(1).max(6),
+    preguntas: z.array(pregunta).min(1),
+  }),
+});
+
+export const collections = { teoria, ejercicios, quizzes, modulos, docs, autoevaluacion };

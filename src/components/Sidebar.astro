@@ -14,6 +14,7 @@ import {
   claveProgreso,
   nn,
 } from "../lib/curso";
+import { modulosConAutoevaluacion } from "../lib/interactivos";
 
 interface Props {
   /** id de la entrada activa (lección, ejercicio o quiz), para resaltarla */
@@ -26,6 +27,7 @@ const { activo, moduloActivo } = Astro.props;
 const lecciones = await leccionesPorModulo();
 const ejercicios = await ejerciciosPorModulo();
 const conQuiz = await modulosConQuiz();
+const conAuto = await modulosConAutoevaluacion();
 const rutaActual = Astro.url.pathname;
 
 const docsNav = [DOCS["docs/programa"], DOCS["modulo-0-instalacion/README"], DOCS["proyecto-integrador/README"], DOCS["recursos/README"]];
@@ -84,11 +86,14 @@ const docsNav = [DOCS["docs/programa"], DOCS["modulo-0-instalacion/README"], DOC
                 ))}
               </ol>
             )}
-            {(ejs.length > 0 || conQuiz.has(m.numero)) && (
+            {(ejs.length > 0 || conQuiz.has(m.numero) || conAuto.has(m.numero)) && (
               <div class="sb-extra">
                 {ejs.map((e) => (
                   <a href={e.ruta} class:list={["sb-chip", { activo: e.id === activo }]}>Ej. {nn(e.orden)}</a>
                 ))}
+                {conAuto.has(m.numero) && (
+                  <a href={`/modulo/${m.numero}/autoevaluacion/`} class:list={["sb-chip", "auto", { activo: rutaActual === `/modulo/${m.numero}/autoevaluacion/` }]}>Autoevaluación</a>
+                )}
                 {conQuiz.has(m.numero) && (
                   <a href={`/modulo/${m.numero}/quiz/`} class:list={["sb-chip", "quiz", { activo: rutaActual === `/modulo/${m.numero}/quiz/` }]}>Quiz</a>
                 )}
@@ -331,6 +336,9 @@ const docsNav = [DOCS["docs/programa"], DOCS["modulo-0-instalacion/README"], DOC
   }
   .sb-chip.quiz {
     border-style: dashed;
+  }
+  .sb-chip.auto {
+    color: var(--gold);
   }
 
   /* drawer móvil */

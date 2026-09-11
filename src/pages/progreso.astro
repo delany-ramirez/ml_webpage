@@ -2,13 +2,16 @@
 import Curso from "../layouts/Curso.astro";
 import Cabecera from "../components/Cabecera.astro";
 import IndiceCurso from "../components/IndiceCurso.astro";
-import { MODULOS, leccionesPorModulo, tituloHtml, claveProgreso, nn } from "../lib/curso";
+import { MODULOS, leccionesPorModulo, tituloHtml, tituloTexto, claveProgreso, nn } from "../lib/curso";
 
 const porModulo = await leccionesPorModulo();
+const nombres: Record<string, string> = {};
+for (const ls of porModulo.values()) for (const l of ls) nombres[claveProgreso(l)] = tituloTexto(l.titulo);
 ---
 
 <Curso title="Tu progreso" description="Progreso del curso guardado en este navegador; expórtalo para continuar en otro dispositivo.">
   <IndiceCurso />
+  <script is:inline type="application/json" id="nombres-lecciones" set:html={JSON.stringify(nombres)} />
   <Cabecera eyebrow="Curso" titulo="Tu progreso">
     <span class="chip gold" data-progreso-texto>0 / 0 · 0%</span>
   </Cabecera>
@@ -50,6 +53,11 @@ const porModulo = await leccionesPorModulo();
     })}
   </section>
 
+  <section class="tarjeta rise d2" id="autoevaluaciones" hidden>
+    <span class="eyebrow">Autoevaluaciones</span>
+    <ul class="auto-lista" id="auto-lista"></ul>
+  </section>
+
   <section class="tarjeta rise d2" id="exportar">
     <span class="eyebrow">Llevar el progreso a otro dispositivo</span>
     <div class="dos">
@@ -83,7 +91,32 @@ const porModulo = await leccionesPorModulo();
   </section>
 
   <script>
-    import { exportar, importar, reiniciar } from "../scripts/progress";
+    import { exportar, importar, reiniciar, leer, type Progreso } from "../scripts/progress";
+
+    // --- resultados de autoevaluación ---
+    const nombresLecciones = JSON.parse(document.getElementById("nombres-lecciones")!.textContent || "{}") as Record<string, string>;
+    const secAuto = document.getElementById("autoevaluaciones")!;
+    const lista = document.getElementById("auto-lista")!;
+    const etiqueta = (clave: string) => {
+      // "autoevaluacion/3" → Módulo 3 · completa ; "autoevaluacion/3/02-x" → Módulo 3 · <título>
+      const partes = clave.replace(/^autoevaluacion\//, "").split("/");
+      const mod = `Módulo ${partes[0]}`;
+      if (partes.length === 1) return `${mod} · autoevaluación completa`;
+      return `${mod} · ${nombresLecciones[partes.join("/")] ?? partes[1]}`;
+    };
+    const pintarAuto = (p: Progreso) => {
+      const entradas = Object.entries(p.autoevaluacion).sort(([a], [b]) => a.localeCompare(b));
+      secAuto.hidden = entradas.length === 0;
+      lista.innerHTML = entradas
+        .map(([k, r]) => {
+          const pct = Math.round((100 * r.score) / r.total);
+          const fecha = new Date(r.fecha).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" });
+          return `<li><span class="al-nombre">${etiqueta(k)}</span><span class="al-score">${r.score} / ${r.total} · ${pct}%</span><span class="al-fecha">${fecha}</span></li>`;
+        })
+        .join("");
+    };
+    pintarAuto(leer());
+    document.addEventListener("progress:change", (e) => pintarAuto((e as CustomEvent<Progreso>).detail));
 
     const ta = document.getElementById("codigo-exportar") as HTMLTextAreaElement;
     const refrescar = () => (ta.value = exportar());
@@ -262,6 +295,32 @@ const porModulo = await leccionesPorModulo();
     background: var(--surface-2);
   }
 
+  .auto-lista {
+    list-style: none;
+    margin-top: 12px;
+  }
+  .auto-lista li {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 14px;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .auto-lista li:last-child {
+    border-bottom: 0;
+  }
+  .al-score {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--gold);
+  }
+  .al-fecha {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--muted-2);
+  }
   .dos {
     display: grid;
     grid-template-columns: 1fr 1fr;

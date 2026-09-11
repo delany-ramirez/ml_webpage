@@ -139,6 +139,9 @@ img {
   max-width: 100%;
   height: auto;
 }
+[hidden] {
+  display: none !important;
+}
 button {
   font: inherit;
   color: inherit;

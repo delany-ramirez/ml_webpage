@@ -1,0 +1,53 @@
+---
+import { getCollection } from "astro:content";
+import Curso from "../../../layouts/Curso.astro";
+import Cabecera from "../../../components/Cabecera.astro";
+import Quiz from "../../../components/Quiz.astro";
+import { moduloPorNumero, modulosConQuiz } from "../../../lib/curso";
+
+export async function getStaticPaths() {
+  const entradas = await getCollection("autoevaluacion");
+  return entradas.flatMap((entry) => {
+    const modulo = moduloPorNumero(entry.data.modulo);
+    if (!modulo) return [];
+    return [{ params: { n: String(modulo.numero) }, props: { modulo, preguntas: entry.data.preguntas } }];
+  });
+}
+
+const { modulo, preguntas } = Astro.props;
+const tieneQuizFormal = (await modulosConQuiz()).has(modulo.numero);
+const [s0, s1] = modulo.sesiones;
+const sesiones = s0 === s1 ? `Sesión ${s0}` : `Sesiones ${s0}–${s1}`;
+---
+
+<Curso title={`Autoevaluación · Módulo ${modulo.numero}`} moduloActivo={modulo.numero}>
+  <Cabecera eyebrow={`Módulo ${modulo.numero} · ${sesiones} · Autoevaluación`} titulo={modulo.nombre}>
+    <span class="chip gold">{modulo.corto}</span>
+    <span class="chip">{preguntas.length} preguntas</span>
+    <span class="chip">Opción múltiple</span>
+  </Cabecera>
+
+  <p class="intro rise">
+    Preguntas conceptuales con corrección inmediata para comprobar lo que entendiste del módulo.
+    Se guarda tu mejor puntaje en <a href="/progreso/">tu progreso</a>.
+    {tieneQuizFormal && (
+      <> No reemplaza el <a href={`/modulo/${modulo.numero}/quiz/`}>quiz de cierre</a>, que es de respuesta abierta y se entrega al docente.</>
+    )}
+  </p>
+
+  <div class="rise d1">
+    <Quiz clave={`autoevaluacion/${modulo.numero}`} preguntas={preguntas} titulo={`Módulo ${modulo.numero} · ${preguntas.length} preguntas`} />
+  </div>
+</Curso>
+
+<style>
+  .intro {
+    max-width: 72ch;
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 24px;
+  }
+  .intro a {
+    color: var(--gold);
+  }
+</style>

@@ -4,6 +4,7 @@ import Curso from "../../../../layouts/Curso.astro";
 import Cabecera from "../../../../components/Cabecera.astro";
 import PrevNext from "../../../../components/PrevNext.astro";
 import BotonCompletar from "../../../../components/BotonCompletar.astro";
+import Complementos from "../../../../components/Complementos.astro";
 import { parseLeccion, prevNext, tituloTexto, tituloHtml, etiquetaSesion, claveProgreso, nn } from "../../../../lib/curso";
 
 export async function getStaticPaths() {
@@ -37,6 +38,8 @@ const clave = claveProgreso(leccion);
   <article class="prose rise d1">
     <Content />
   </article>
+
+  <Complementos leccion={leccion} />
 
   <section class="cierre rise d2">
     <div>

@@ -1,0 +1,135 @@
+{
+  "modulo": 3,
+  "preguntas": [
+    {
+      "id": "m3-01",
+      "leccion": "01-regresion-lineal",
+      "pregunta": "El gráfico de residuales contra valores ajustados tiene forma de embudo: la dispersión crece con el valor predicho. ¿Qué supuesto del modelo lineal se está violando?",
+      "opciones": [
+        "Linealidad de la relación entre predictores y respuesta",
+        "Homocedasticidad (varianza constante del error)",
+        "Independencia de los errores",
+        "Ausencia de multicolinealidad"
+      ],
+      "correcta": 1,
+      "explicacion": "El embudo indica que la varianza del error cambia con el nivel de la predicción: heterocedasticidad. Un R² alto no lo detecta porque es una medida global; el embudo es un patrón local."
+    },
+    {
+      "id": "m3-02",
+      "leccion": "01-regresion-lineal",
+      "pregunta": "Comparas dos modelos de precio de vivienda. Uno tiene mejor MAE en todos los cuartiles de precio pero peor RMSE global. ¿Qué es lo más probable?",
+      "opciones": [
+        "Hay un error en el cálculo: MAE y RMSE siempre ordenan igual a los modelos",
+        "Unas pocas viviendas con error enorme dominan el RMSE, que penaliza cuadráticamente",
+        "El modelo con mejor MAE está sobreajustado",
+        "El RMSE no es una métrica válida para regresión"
+      ],
+      "correcta": 1,
+      "explicacion": "El RMSE eleva al cuadrado los errores, así que unos pocos casos atípicos con error gigante pueden invertir la comparación. Elegir la métrica es una decisión sobre qué errores importan más, no un trámite."
+    },
+    {
+      "id": "m3-03",
+      "leccion": "02-descenso-gradiente",
+      "pregunta": "Con η = 0.1 el costo explota; con η = 0.0001 converge pero necesita 50 000 iteraciones. ¿Qué es lo más probable que falte?",
+      "opciones": [
+        "Más iteraciones con la tasa grande",
+        "Estandarizar los predictores antes de correr el descenso",
+        "Usar la ecuación normal en vez de descenso",
+        "Cambiar la función de costo a MAE"
+      ],
+      "correcta": 1,
+      "explicacion": "Predictores en escalas muy distintas producen una superficie de costo alargada: una tasa que sirve para una dirección es demasiado grande para otra. Estandarizar corrige ambos síntomas a la vez."
+    },
+    {
+      "id": "m3-04",
+      "leccion": "02-descenso-gradiente",
+      "pregunta": "¿Cuándo conviene el descenso del gradiente en lugar de la ecuación normal para OLS?",
+      "opciones": [
+        "Siempre: la ecuación normal es una aproximación",
+        "Cuando p es pequeño y n cabe en memoria",
+        "Cuando p es grande, n no cabe en memoria o el modelo no tiene solución cerrada",
+        "Nunca: para OLS la ecuación normal es exacta y siempre más rápida"
+      ],
+      "correcta": 2,
+      "explicacion": "Invertir XᵀX cuesta O(p³) y exige todos los datos a la vez. El descenso escala con O(np) por paso, admite lotes y funciona para modelos sin solución cerrada (logística, redes, Lasso)."
+    },
+    {
+      "id": "m3-05",
+      "leccion": "03-multicolinealidad-polinomica",
+      "pregunta": "Agregas area² a un modelo que ya tenía area. El R² de prueba mejora, pero el VIF de area pasa de 3 a 45. ¿Qué concluyes?",
+      "opciones": [
+        "Hay que descartar el término: un VIF alto siempre invalida el modelo",
+        "El VIF alto es esperable (area y area² están correlacionadas); daña la interpretación de coeficientes, no necesariamente la predicción",
+        "El R² de prueba está mal calculado",
+        "Hay fuga de datos"
+      ],
+      "correcta": 1,
+      "explicacion": "Los términos polinómicos de una misma variable son colineales por construcción. Si el objetivo es predecir, el criterio es el error de validación; si es interpretar coeficientes, la colinealidad sí es un problema."
+    },
+    {
+      "id": "m3-06",
+      "leccion": "03-multicolinealidad-polinomica",
+      "pregunta": "Todos los VIF individuales son menores que 3. ¿Puedes concluir que no hay ningún problema para interpretar cada coeficiente?",
+      "opciones": [
+        "Sí: VIF < 5 garantiza coeficientes estables e interpretables",
+        "No: el VIF mide colinealidad con los demás predictores, pero un coeficiente puede tener signo contraintuitivo por confusión con variables no incluidas o por el rango de los datos",
+        "No, porque el VIF solo aplica a variables categóricas",
+        "Sí, siempre que n > 30"
+      ],
+      "correcta": 1,
+      "explicacion": "El VIF cuantifica cuánto se infla la varianza de un coeficiente por su relación lineal con los otros predictores. No dice nada sobre variables omitidas ni sobre el sentido causal del coeficiente."
+    },
+    {
+      "id": "m3-07",
+      "leccion": "04-regularizacion",
+      "pregunta": "¿Cuál es la diferencia práctica más importante entre Ridge (L2) y Lasso (L1)?",
+      "opciones": [
+        "Ridge acepta variables categóricas y Lasso no",
+        "Lasso puede llevar coeficientes exactamente a cero (selección implícita); Ridge los encoge pero no los anula",
+        "Ridge necesita estandarizar los predictores y Lasso no",
+        "Lasso tiene solución cerrada y Ridge no"
+      ],
+      "correcta": 1,
+      "explicacion": "La geometría de la penalización L1 (un rombo) hace que la solución toque los ejes: coeficientes exactamente cero. La L2 (un círculo) encoge todos sin anularlos. Ambos requieren estandarizar; Ridge es el que tiene solución cerrada."
+    },
+    {
+      "id": "m3-08",
+      "leccion": "05-sesgo-varianza-validacion",
+      "pregunta": "Un modelo tiene error de entrenamiento casi cero y error de validación alto. ¿Qué diagnóstico y qué remedio son coherentes?",
+      "opciones": [
+        "Subajuste (alto sesgo): aumentar la complejidad del modelo",
+        "Sobreajuste (alta varianza): más datos, regularización o un modelo más simple",
+        "Fuga de datos: revisar el escalado",
+        "Multicolinealidad: calcular el VIF"
+      ],
+      "correcta": 1,
+      "explicacion": "La brecha grande entre entrenamiento y validación es la firma de la varianza alta: el modelo memoriza el ruido. Reducir complejidad, regularizar o conseguir más datos son los remedios clásicos."
+    },
+    {
+      "id": "m3-09",
+      "leccion": "05-sesgo-varianza-validacion",
+      "pregunta": "Comparas Ridge y Lasso por validación cruzada de 10 pliegues. Las barras de error de sus RMSE se solapan. ¿Qué es correcto afirmar?",
+      "opciones": [
+        "Que no hay diferencia entre los modelos",
+        "Que las barras solapadas no son una comparación pareada: hay que mirar la diferencia pliegue a pliegue y su error estándar",
+        "Que Ridge es mejor porque su barra es más corta",
+        "Que hacen falta más pliegues para que dejen de solaparse"
+      ],
+      "correcta": 1,
+      "explicacion": "Los dos modelos se evalúan sobre los mismos pliegues, así que sus errores están correlacionados. La comparación honesta usa las diferencias por pliegue (prueba pareada), no barras independientes."
+    },
+    {
+      "id": "m3-10",
+      "leccion": "06-seleccion-hiperparametros",
+      "pregunta": "Eliges λ por validación cruzada sobre todo el conjunto de entrenamiento y luego reportas el RMSE de validación cruzada sobre ese mismo conjunto. ¿Cuál es el problema?",
+      "opciones": [
+        "Ninguno: así funciona GridSearchCV",
+        "Fuga de selección: el λ se eligió mirando los mismos pliegues que luego evalúan; hace falta validación cruzada anidada o un conjunto de prueba aparte",
+        "Que la búsqueda en malla es más lenta que la aleatoria",
+        "Que λ debería elegirse con el conjunto de prueba"
+      ],
+      "correcta": 1,
+      "explicacion": "El hiperparámetro se optimizó contra esos pliegues, así que el RMSE reportado es optimista. La CV anidada elige λ en un bucle interno y evalúa en uno externo que nunca participó en la elección."
+    }
+  ]
+}

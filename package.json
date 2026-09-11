@@ -12,7 +12,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "e2e": "node scripts/e2e-progreso.mjs"
+    "e2e": "node scripts/e2e-progreso.mjs && node scripts/e2e-interactivos.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.0",

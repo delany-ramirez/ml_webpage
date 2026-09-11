@@ -1,0 +1,9 @@
+[
+  {
+    "archivo": "descenso-gradiente.html",
+    "titulo": "Descenso del gradiente y tasa de aprendizaje",
+    "descripcion": "Mueve la tasa de aprendizaje y observa cómo el descenso converge, oscila o diverge sobre una función de costo convexa, y qué pasa con una no convexa.",
+    "leccion": "3/02-descenso-gradiente",
+    "alto": 560
+  }
+]

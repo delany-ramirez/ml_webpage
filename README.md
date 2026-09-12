@@ -33,11 +33,13 @@ Si ya clonaste sin submodules: `git submodule update --init --recursive`.
 
 ```
 content/            submodule → machine_learning (solo lectura)
-public/             favicon, robots, widgets HTML aislados
+public/             favicon, robots, widgets HTML aislados (public/widgets/, contrato en _plantilla.html)
 src/
   content.config.ts colecciones (teoria, ejercicios, quizzes, modulos, docs) sobre content/
   lib/curso.ts      metadatos derivados de ruta + H1; orden global; prev/next
-  plugins/          remark: quitar H1 y línea de metadatos
+  plugins/          remark: quitar H1, reescribir enlaces del contenido, enlazar referencias en backticks
+  integrations/     publica los notebooks del submodule en /notebooks/
+  data/             autoevaluaciones (JSON por módulo) y registro de widgets
   layouts/          Base.astro
   components/       Nav, Footer, …
   pages/            rutas

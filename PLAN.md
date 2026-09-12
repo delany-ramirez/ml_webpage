@@ -100,7 +100,7 @@ ml_webpage/
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | `c591f9c` |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | `a6a43c0` |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ✅ hecha | `c337350` · `db98b24` |
-| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ⬜ pendiente | |
+| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ primer hito (2026-09-12); sigue abierta al ritmo del contenido | `PENDIENTE` |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |
 
 Cada fase cierra con un commit `Fase N: ...` que incluye la actualización de este archivo.
@@ -336,16 +336,45 @@ Hallazgos:
 - No se añade `wrangler` como devDependency (igual que en el portafolio): Workers Builds lo
   aporta en `npx wrangler deploy` y en local `npx wrangler@4` basta para validar.
 
-### ⬜ Fase 6 — Contenido interactivo (continua)
+### ✅ Fase 6 — Contenido interactivo (primer hito 2026-09-12; continua)
 
 Avanza en paralelo al repo de contenido. Cada ítem es un commit pequeño.
 
-- [ ] Autoevaluación de los módulos 1, 2, 4 (y 5, 6 cuando existan).
-- [ ] Widgets: sub/sobreajuste polinómico (M3·S8), frontera logística + umbral con matriz de
-      confusión y ROC (M4·S9), k-means paso a paso (M5·S12), PCA 2D (M5·S12).
-- [ ] `src/plugins/remark-enlaces-cruzados.ts`: convierte `` `NN-tema.md` `` en enlace a la
-      lección si existe en la colección; `` `NN-tema.ipynb` `` en enlace a GitHub/Colab.
-- [ ] Botones *Abrir en Colab* / *Ver en GitHub* / *Descargar* en las tarjetas de notebook.
+- [x] Autoevaluación de los módulos 1, 2 y 4 (`05a2ce9`… `e2e39f1`): 10, 10 y 12 preguntas,
+      todas ligadas a una lección (`leccion`) para que aparezcan en el bloque *Comprueba*.
+      Escritas a partir de las lecciones, con escenarios y explicaciones que citan cifras del
+      contenido. La posición de la opción correcta sigue un patrón variado (no siempre «B»).
+- [ ] Autoevaluación de los módulos 5 y 6 cuando exista su contenido.
+- [x] Widgets (`c4d9e0b`): `sobreajuste-polinomico.html` (M3·05), `umbral-clasificacion.html`
+      (M4·03: frontera, umbral, matriz de confusión, ROC, AP y umbral de mínimo costo),
+      `kmeans.html` (M5·01) y `pca-2d.html` (M5·03). Los dos del módulo 5 están registrados
+      con el slug previsto en el README del módulo (`01-clustering`, `03-reduccion-dimensionalidad`)
+      y aparecerán en la lección cuando se publique; mientras tanto se llega a ellos desde el
+      bloque **Visualizadores** del índice de módulo (`790a804`).
+- [x] `src/plugins/remark-enlaces-cruzados.ts` (`05a2ce9`): `` `NN-tema.md` `` → lección,
+      `` `ejNN-x.md` `` → ejercicio, `` `NN-x.ipynb` `` → GitHub. Resuelve un nombre suelto en
+      la carpeta del archivo, luego en el módulo, luego en todo el contenido si es único; deja
+      intactos `*-sol.md`, plantillas con `<…>` y archivos que aún no existen.
+- [x] Tarjetas de notebooks por módulo (`ce63842`): componente `Notebooks.astro` con
+      *Abrir en Colab* / *Ver en GitHub* / *Descargar*. Datos de `lib/notebooks-fs.ts` (lee el
+      submodule por `fs`, el título del primer H1 del notebook y tipo/descripción de la tabla
+      «Notebooks» del README del módulo). La integración `src/integrations/notebooks.ts`
+      publica los `.ipynb` en `/notebooks/modulo-N/` (copia en build, middleware en dev) para
+      que *Descargar* funcione en la misma origen — GitHub raw los serviría como texto.
+
+Hallazgos:
+- El e2e de interactivos solo cubre el flujo del módulo 3; los quizzes nuevos usan el mismo
+  componente y se comprobaron a mano en el navegador.
+- Widgets nuevos siguen el contrato de `_plantilla.html` y comparten estructura con
+  `descenso-gradiente.html` (`prep()`, `dibujar()`, `leer()`, `estado`). Todos generan datos
+  con semilla (mulberry32) para que «Nueva muestra» sea reproducible. Puntos de ruptura:
+  controles a 2 columnas < 720–760 px (el iframe en la lección mide ≈ 640 px), todo a 1
+  columna < 560 px.
+- Los widgets del módulo 5 no tienen prueba en lección hasta que exista el contenido; si el
+  slug final difiere, basta cambiar `leccion` en `widgets.json`.
+- Ideas para siguientes hitos: widget de árbol de decisión (M4·04) y de retropropagación
+  (M5·04); autoevaluaciones 5 y 6; botón *Abrir en Colab* también en el bloque Practica de la
+  lección cuando el ejercicio cite un notebook.
 
 ---
 

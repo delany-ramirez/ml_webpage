@@ -4,7 +4,7 @@ import Curso from "../../../layouts/Curso.astro";
 import Cabecera from "../../../components/Cabecera.astro";
 import Notebooks from "../../../components/Notebooks.astro";
 import { MODULOS, parseLeccion, lecciones, ejerciciosDe, modulosConQuiz, tituloHtml, claveProgreso, nn } from "../../../lib/curso";
-import { modulosConAutoevaluacion, widgetsDe } from "../../../lib/interactivos";
+import { modulosConAutoevaluacion, widgetsDe, widgetsDelModulo } from "../../../lib/interactivos";
 import { notebooksDe } from "../../../lib/notebooks-fs";
 
 export async function getStaticPaths() {
@@ -22,6 +22,7 @@ const headings = rendered?.headings ?? [];
 
 const todas = await lecciones();
 const propias = todas.filter((l) => l.modulo.numero === modulo.numero);
+const visualizadores = widgetsDelModulo(modulo.numero).map((w) => ({ ...w, leccionPublicada: propias.find((l) => claveProgreso(l) === w.leccion) ?? null }));
 const ejercicios = await ejerciciosDe(modulo.numero);
 const tieneQuiz = (await modulosConQuiz()).has(modulo.numero);
 const tieneAuto = (await modulosConAutoevaluacion()).has(modulo.numero);
@@ -83,6 +84,30 @@ const nextMod = i < MODULOS.length - 1 ? MODULOS[i + 1] : null;
   )}
 
   {!vacio && <Notebooks modulo={modulo.numero} />}
+
+  {visualizadores.length > 0 && (
+    <section class="vis rise d1" aria-labelledby="vis-titulo">
+      <div class="vis-head">
+        <span class="eyebrow" id="vis-titulo">Visualizadores</span>
+        <span class="vis-nota">Interactivos del módulo; cada uno vive dentro de su lección{vacio ? " (aún por publicar)" : ""}.</span>
+      </div>
+      <ul class="vis-lista">
+        {visualizadores.map((w) => (
+          <li>
+            <span class="w" aria-hidden="true">◈</span>
+            <div>
+              <a href={w.leccionPublicada ? `${w.leccionPublicada.ruta}#explora` : `/widgets/${w.archivo}`} target={w.leccionPublicada ? undefined : "_blank"} rel={w.leccionPublicada ? undefined : "noopener"}>{w.titulo}</a>
+              {w.leccionPublicada ? (
+                <span class="vis-lec">Lección {nn(w.leccionPublicada.orden)} · <span set:html={tituloHtml(w.leccionPublicada.titulo)} /></span>
+              ) : (
+                <span class="vis-lec">Lección en construcción · <a href={`/widgets/${w.archivo}`} target="_blank" rel="noopener">abrir aparte ↗</a></span>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 
   {Content && (
     <article class="prose rise d2">
@@ -189,6 +214,56 @@ const nextMod = i < MODULOS.length - 1 ? MODULOS[i + 1] : null;
     margin-top: 16px;
     padding-top: 14px;
     border-top: 1px solid var(--line);
+  }
+  .vis {
+    max-width: 72ch;
+    margin-bottom: 40px;
+  }
+  .vis-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+    margin-bottom: 10px;
+  }
+  .vis-nota {
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .vis-lista {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+  }
+  .vis-lista li {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
+    align-items: baseline;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .vis-lista .w {
+    color: var(--silver);
+  }
+  .vis-lista li > div > a {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .vis-lec {
+    display: block;
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted-2);
+  }
+  .vis-lec a {
+    color: var(--gold);
+  }
+  .vis-lec :global(code) {
+    font-family: var(--font-mono);
   }
   .mods {
     display: flex;

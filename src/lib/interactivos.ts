@@ -24,6 +24,11 @@ export function widgetsDe(claveLeccion: string): Widget[] {
   return WIDGETS.filter((w) => w.leccion === claveLeccion);
 }
 
+/** Todos los visualizadores registrados para un módulo (tenga o no publicada la lección). */
+export function widgetsDelModulo(numeroModulo: number): Widget[] {
+  return WIDGETS.filter((w) => w.leccion.startsWith(`${numeroModulo}/`));
+}
+
 export async function autoevaluacionDe(numeroModulo: number): Promise<Pregunta[]> {
   const entradas = await getCollection("autoevaluacion");
   const e = entradas.find((x) => x.data.modulo === numeroModulo);

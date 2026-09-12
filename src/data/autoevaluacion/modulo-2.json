@@ -1,0 +1,135 @@
+{
+  "modulo": 2,
+  "preguntas": [
+    {
+      "id": "m2-01",
+      "leccion": "01-recoleccion-datos",
+      "pregunta": "Al leer un CSV con `pd.read_csv`, la columna `codigo_programa` aparece como entera y los códigos «01», «02» quedaron como 1 y 2. ¿Cuál es la corrección adecuada?",
+      "opciones": [
+        "Volver a agregar el cero con `str.zfill(2)` después de leer",
+        "Cambiar la codificación a `latin-1`",
+        "Declarar el tipo al leer: `dtype={\"codigo_programa\": str}`",
+        "Usar `na_values=[\"01\", \"02\"]`"
+      ],
+      "correcta": 2,
+      "explicacion": "Es un tipo mal inferido: pandas convirtió un identificador en número. Se evita en la lectura declarando el `dtype`. Reconstruir el cero después es frágil (¿y los códigos de tres cifras?); la codificación y `na_values` resuelven problemas distintos (tildes rotas, faltantes disfrazados)."
+    },
+    {
+      "id": "m2-02",
+      "leccion": "01-recoleccion-datos",
+      "pregunta": "En el diccionario de datos, ¿qué fila es la que previene la fuga de datos y casi nunca se documenta?",
+      "opciones": [
+        "Cuándo está disponible cada variable",
+        "El tipo de la variable",
+        "La unidad y el rango",
+        "Cómo se codifican los valores faltantes"
+      ],
+      "correcta": 0,
+      "explicacion": "Si una variable solo se conoce después del hecho a predecir, no puede usarse. Documentar «cuándo está disponible» es lo que permite descartarla antes de que el modelo la aproveche y engañe con métricas perfectas, como `alive` en el Titanic."
+    },
+    {
+      "id": "m2-03",
+      "leccion": "02-limpieza-y-calidad",
+      "pregunta": "En el Titanic, la edad falta con mucha más frecuencia en tercera clase, y la clase sí se conoce. ¿Qué mecanismo es y qué imputación es válida?",
+      "opciones": [
+        "MCAR: imputar con la media global",
+        "MNAR: eliminar la columna",
+        "MCAR: eliminar las filas con edad faltante",
+        "MAR: imputar condicionando a la clase (por ejemplo, mediana por clase) y guardar el indicador de ausencia"
+      ],
+      "correcta": 3,
+      "explicacion": "La ausencia depende de otra variable observada (la clase): es MAR. Imputar con la media global sesga; hay que condicionar a la variable de la que depende la ausencia. El indicador `falta_edad` conserva la señal de que el dato faltaba."
+    },
+    {
+      "id": "m2-04",
+      "leccion": "02-limpieza-y-calidad",
+      "pregunta": "Un dataset de pasajeros sin columna de identificador tiene 107 filas exactamente iguales. ¿Qué hacer?",
+      "opciones": [
+        "Eliminarlas con `drop_duplicates()`: filas iguales son registros repetidos",
+        "Conservarlas: sin ID, filas iguales pueden ser personas distintas que coinciden en todos los valores; investigar el origen antes de decidir",
+        "Conservar solo la mitad para no sesgar",
+        "Eliminarlas solo si son de la clase mayoritaria"
+      ],
+      "correcta": 1,
+      "explicacion": "Dos hombres de tercera clase, de 25 años, solos y con la misma tarifa producen filas iguales siendo personas distintas. Eliminarlas descartaría 107 pasajeros reales y sesgaría el dataset hacia el perfil más frecuente. Sin identificador, la decisión requiere investigar el origen."
+    },
+    {
+      "id": "m2-05",
+      "leccion": "03-analisis-exploratorio",
+      "pregunta": "La correlación de Pearson entre edad y supervivencia en el Titanic es −0.077. ¿Qué concluyes?",
+      "opciones": [
+        "Hay que revisar la gráfica: Pearson solo ve relaciones lineales y la relación puede tener forma de U (niños y mayores sobrevivieron más)",
+        "La edad no aporta nada al modelo",
+        "La edad tiene una relación lineal negativa fuerte con sobrevivir",
+        "El coeficiente está mal calculado: debería estar entre 0 y 1"
+      ],
+      "correcta": 0,
+      "explicacion": "Una relación en forma de U da correlación cercana a cero aunque la variable sea informativa. Pearson mide asociación lineal; hay que mirar la gráfica o la tasa del objetivo por rango, y para relaciones monótonas no lineales, Spearman."
+    },
+    {
+      "id": "m2-06",
+      "leccion": "03-analisis-exploratorio",
+      "pregunta": "En el EDA descubres que ser mujer aumenta la supervivencia 60 puntos en primera clase pero solo 36 en tercera. ¿Qué consecuencia de modelado tiene?",
+      "opciones": [
+        "Ninguna: cualquier modelo captura esto automáticamente",
+        "Hay que eliminar la variable clase por redundante",
+        "Hay una interacción sexo × clase: un modelo aditivo necesita el término explícito; los árboles la capturan solos",
+        "Hay que estandarizar el sexo y la clase"
+      ],
+      "correcta": 2,
+      "explicacion": "El efecto de una variable depende del valor de otra: eso es una interacción. La regresión lineal o logística sin término de interacción no puede representarla; los árboles y ensambles sí, porque cada rama condiciona sobre las anteriores. Detectarla en el EDA informa la elección del modelo."
+    },
+    {
+      "id": "m2-07",
+      "leccion": "04-ingenieria-caracteristicas",
+      "pregunta": "Tu API en producción se cae el día que llega una ciudad que no estaba en los datos de entrenamiento. ¿Qué faltó en el `OneHotEncoder`?",
+      "opciones": [
+        "`drop=\"first\"`",
+        "`handle_unknown=\"ignore\"`",
+        "Usar codificación ordinal en lugar de one-hot",
+        "Escalar la variable antes de codificarla"
+      ],
+      "correcta": 1,
+      "explicacion": "Sin `handle_unknown=\"ignore\"`, una categoría no vista produce un error. Con él, se codifica como ceros. `drop=\"first\"` evita la colinealidad perfecta entre columnas generadas, que es otro problema; la codificación ordinal sería incorrecta para una variable nominal."
+    },
+    {
+      "id": "m2-08",
+      "leccion": "04-ingenieria-caracteristicas",
+      "pregunta": "¿Cuál de estas variables nuevas aporta algo que una regresión lineal NO puede construir por sí sola a partir de las originales?",
+      "opciones": [
+        "`tamano_familia = sibsp + parch + 1`",
+        "`edad_x2 = 2 * age`",
+        "`total = fare + age`",
+        "`tarifa_por_persona = fare / tamano_familia`"
+      ],
+      "correcta": 3,
+      "explicacion": "Un modelo lineal sabe sumar variables con coeficientes, así que sumas y múltiplos ya los puede formar. Una razón (división) no: por eso las razones suelen ser las variables nuevas más útiles. Y aun así, hay que demostrar la mejora con validación cruzada."
+    },
+    {
+      "id": "m2-09",
+      "leccion": "05-seleccion-y-pipelines",
+      "pregunta": "Con 10 000 variables de ruido puro, seleccionar las 20 «mejores» mirando todo el dataset y luego hacer validación cruzada da 81 % de accuracy. ¿Qué pasó?",
+      "opciones": [
+        "El modelo encontró señal real en el ruido",
+        "La validación cruzada tiene demasiados pliegues",
+        "Fuga por selección de características: se eligieron las variables que se parecen al objetivo antes de partir; hecho dentro del `Pipeline` da ≈ 46 %",
+        "Es el efecto de no estandarizar dentro del pipeline"
+      ],
+      "correcta": 2,
+      "explicacion": "La selección filtra información directamente sobre el objetivo (qué variables se parecen a la respuesta). Es la fuga de preprocesamiento más grave, medida en +0.09 a +0.13. El escalado fuera del pipeline, en cambio, filtra dos números por variable y su sesgo medido es indistinguible de cero."
+    },
+    {
+      "id": "m2-10",
+      "leccion": "05-seleccion-y-pipelines",
+      "pregunta": "¿Qué artefacto se guarda con `joblib` y se despliega como API en la sesión 14?",
+      "opciones": [
+        "El `Pipeline` completo: imputación, escalado, codificación y modelo, con lo aprendido en entrenamiento",
+        "Solo el modelo entrenado (los coeficientes)",
+        "Los datos de entrenamiento y el modelo",
+        "El notebook con el análisis"
+      ],
+      "correcta": 0,
+      "explicacion": "Sin las medianas de imputación, las medias y desviaciones del escalado y las categorías del codificador, en producción no se puede reproducir el preprocesamiento. El `Pipeline` garantiza coherencia entre entrenamiento y producción y es lo que hace honesta la evaluación."
+    }
+  ]
+}

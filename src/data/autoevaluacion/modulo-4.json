@@ -1,0 +1,161 @@
+{
+  "modulo": 4,
+  "preguntas": [
+    {
+      "id": "m4-01",
+      "leccion": "01-regresion-logistica",
+      "pregunta": "En una regresión logística, el coeficiente del promedio anterior (estandarizado) es β = 1.74. ¿Cómo se lee?",
+      "opciones": [
+        "Subir una desviación estándar aumenta la probabilidad de aprobar en 1.74",
+        "Subir una desviación estándar aumenta la probabilidad en 17.4 puntos, siempre",
+        "Subir una desviación estándar multiplica los momios (odds) de aprobar por exp(1.74) ≈ 5.7; el efecto sobre la probabilidad depende de dónde se esté en la sigmoide",
+        "El coeficiente no es interpretable porque la sigmoide no es lineal"
+      ],
+      "correcta": 2,
+      "explicacion": "La logística es una regresión lineal sobre el log-momio: el efecto es aditivo en log-momios, multiplicativo en momios (razón de momios exp(β)) y no constante en probabilidad, por la forma de S de la sigmoide. Mismo β, efectos muy distintos según el punto de partida."
+    },
+    {
+      "id": "m4-02",
+      "leccion": "01-regresion-logistica",
+      "pregunta": "Con `penalty=None`, `LogisticRegression` avisa «lbfgs failed to converge» y devuelve coeficientes enormes. Los datos incluyen una variable que es casi una copia del objetivo. ¿Qué ocurre?",
+      "opciones": [
+        "Separación perfecta: la verosimilitud no tiene máximo y los coeficientes crecen sin límite; la regularización es lo que garantiza una solución finita",
+        "Faltan iteraciones: subir `max_iter` lo resuelve",
+        "Hay que cambiar a softmax",
+        "La entropía cruzada no es convexa y cayó en un mínimo local"
+      ],
+      "correcta": 0,
+      "explicacion": "Si un hiperplano separa perfectamente las clases, escalar β hacia infinito reduce el costo sin llegar nunca a 0: la MLE no existe. Por eso `LogisticRegression` regulariza por defecto. La entropía cruzada sí es convexa; el problema no es un mínimo local sino que no hay mínimo."
+    },
+    {
+      "id": "m4-03",
+      "leccion": "02-knn-y-svm",
+      "pregunta": "Con 1177 filas duplicadas en Wine Quality, KNN con k = 1 obtiene un F1 de 0.66 —mejor que logística y SVM—; al quitarlas cae a 0.47. ¿Qué muestra esto?",
+      "opciones": [
+        "KNN es el mejor modelo para este problema",
+        "Hay que subir k para que KNN generalice",
+        "Los duplicados reducen la varianza y por eso mejora el F1",
+        "Los duplicados entre entrenamiento y validación son una fuga que favorece a los modelos que memorizan, y aquí llegó a elegir el modelo equivocado"
+      ],
+      "correcta": 3,
+      "explicacion": "Una fila repetida en validación tiene su vecino a distancia cero: KNN con k = 1 acierta gratis. La fuga no solo infló un número; cambió qué modelo parecía mejor. Cualquier modelo con capacidad de memorizar (árboles profundos, boosting largo) sufre lo mismo en menor grado."
+    },
+    {
+      "id": "m4-04",
+      "leccion": "02-knn-y-svm",
+      "pregunta": "En una SVM con kernel RBF, ¿qué produce una frontera muy irregular que sigue cada punto de entrenamiento?",
+      "opciones": [
+        "C pequeño y γ pequeño",
+        "C grande y γ grande",
+        "C pequeño y γ grande",
+        "Un kernel lineal"
+      ],
+      "correcta": 1,
+      "explicacion": "C grande hace caro violar el margen (poca regularización); γ grande hace que cada vector de soporte influya solo en su vecindad inmediata. Ambos empujan hacia alta varianza. Se afinan juntos, típicamente en una rejilla logarítmica."
+    },
+    {
+      "id": "m4-05",
+      "leccion": "03-metricas-clasificacion",
+      "pregunta": "Con 19 % de positivos, tres modelos tienen accuracy 0.82–0.84 y una SVM lineal 0.81 sin predecir ni un positivo. ¿Qué concluyes?",
+      "opciones": [
+        "La accuracy es indistinguible de la referencia trivial (predecir «no» siempre da 0.81); hay que mirar precisión, recall y la curva PR",
+        "Los cuatro modelos son buenos: superan el 80 %",
+        "La SVM lineal es la mejor porque no comete falsos positivos",
+        "Hay que balancear las clases para que la accuracy sea válida"
+      ],
+      "correcta": 0,
+      "explicacion": "Con prevalencia lejos de 0.5, la accuracy mide sobre todo cuánto se acierta en la clase grande. La matriz de confusión revela recall ≈ 0.3: se escapan dos de cada tres positivos. Siempre comparar contra la referencia trivial, y con desbalance reportar AP junto al AUC-ROC."
+    },
+    {
+      "id": "m4-06",
+      "leccion": "03-metricas-clasificacion",
+      "pregunta": "Aplicas `class_weight=\"balanced\"` a una regresión logística: el recall sube de 0.31 a 0.78 y el F1 (umbral 0.5) también, pero AUC-ROC, AP y el mejor F1 alcanzable no cambian. ¿Qué pasó?",
+      "opciones": [
+        "El modelo mejoró de verdad: el recall es la métrica que importa",
+        "Hay un error: los pesos siempre cambian el AUC",
+        "Los pesos apenas reordenan a las observaciones: equivalen a mover el umbral. Si el umbral se va a elegir con las probabilidades de CV, no aportan nada",
+        "Hay que usar SMOTE en su lugar"
+      ],
+      "correcta": 2,
+      "explicacion": "En modelos lineales, los pesos de clase mueven casi solo el intercepto: cambia la decisión, no el orden. La regla medida es: primero mover el umbral; si no basta, pesos; remuestreo como último recurso. Y evaluar con AP o AUC, nunca con el F1 en 0.5, que siempre «mejora» al balancear."
+    },
+    {
+      "id": "m4-07",
+      "leccion": "04-arboles-y-bagging",
+      "pregunta": "Bagging con 50 árboles sin podar baja la desviación de P(y=1) entre repeticiones de 0.139 a 0.023. ¿Por qué usa árboles sin podar y no árboles pequeños?",
+      "opciones": [
+        "Porque los árboles pequeños son más lentos de entrenar",
+        "Porque el promedio reduce la varianza pero no el sesgo: conviene partir de árboles con sesgo mínimo y dejar que el promedio se ocupe de la varianza",
+        "Porque los árboles sin podar no sobreajustan",
+        "Porque así se obtiene el error out-of-bag"
+      ],
+      "correcta": 1,
+      "explicacion": "Promediar predicciones cancela los errores que los árboles no comparten (varianza), pero el sesgo del promedio es el de cada árbol. Por eso bagging usa árboles profundos y no sobreajusta con B; boosting hace lo contrario: árboles pequeños que corrigen el sesgo en secuencia."
+    },
+    {
+      "id": "m4-08",
+      "leccion": "04-arboles-y-bagging",
+      "pregunta": "Con 2 variables informativas y 18 de ruido, Random Forest con `max_features=1` es claramente peor que bagging; con 12 variables casi todas informativas, `max_features=1` es lo mejor. ¿Qué lección sale?",
+      "opciones": [
+        "Random Forest siempre supera a bagging",
+        "Bagging es mejor cuando hay muchas variables",
+        "Hay que eliminar el ruido antes de usar Random Forest",
+        "`max_features` se afina, no es una mejora automática: decorrelacionar árboles no sirve si les impide ver la señal"
+      ],
+      "correcta": 3,
+      "explicacion": "Random Forest ataca la correlación ρ entre árboles muestreando variables por nodo. Si pocas variables llevan señal, un subconjunto pequeño muchas veces no contiene ninguna y esos nodos parten por ruido. El valor óptimo depende de la fracción de variables relevantes."
+    },
+    {
+      "id": "m4-09",
+      "leccion": "05-boosting",
+      "pregunta": "En gradient boosting, el MSE de prueba alcanza su mínimo en la ronda 45 y luego sube. ¿Qué receta se deriva de esto?",
+      "opciones": [
+        "Usar siempre 45 rondas",
+        "Subir la tasa de aprendizaje para converger antes",
+        "Tasa de aprendizaje baja, muchas rondas, y parar por validación (early stopping): la curva es más plana alrededor del mínimo cuanto menor es ν",
+        "Añadir más árboles: como en bagging, nunca empeora"
+      ],
+      "correcta": 2,
+      "explicacion": "A diferencia de bagging, boosting sobreajusta con las rondas: cada árbol adicional ajusta residuales que ya son ruido. Con ν pequeño los mínimos son casi iguales pero la curva se aplana, lo que hace robusta la elección de la ronda por validación."
+    },
+    {
+      "id": "m4-10",
+      "leccion": "05-boosting",
+      "pregunta": "Para clasificación, ¿qué ajusta cada árbol de gradient boosting y con qué se conecta?",
+      "opciones": [
+        "El gradiente negativo de la entropía cruzada, y − p̂: el mismo residual de la regresión logística, con los árboles haciendo el papel de Xβ",
+        "El residual y − F, igual que en regresión",
+        "Las observaciones mal clasificadas, con peso 1, como AdaBoost",
+        "La probabilidad p̂ directamente"
+      ],
+      "correcta": 0,
+      "explicacion": "El gradiente de la entropía cruzada respecto al log-momio es y − σ(F). Gradient boosting para clasificación es una regresión logística donde F(x) son log-momios construidos por árboles; por eso sus probabilidades salen razonablemente calibradas."
+    },
+    {
+      "id": "m4-11",
+      "leccion": "06-interpretabilidad",
+      "pregunta": "Añades dos columnas de ruido puro (una continua, una binaria) y la importancia por impureza (MDI) pone al ruido continuo por encima de cuatro variables reales. ¿Por qué?",
+      "opciones": [
+        "El ruido continuo tiene señal que el modelo descubrió",
+        "Es un error del Random Forest: con más árboles desaparece",
+        "El ruido binario es más importante, la gráfica está invertida",
+        "La MDI premia la cardinalidad (más umbrales candidatos, alguno reduce la impureza por azar) y mide sobre entrenamiento"
+      ],
+      "correcta": 3,
+      "explicacion": "Con miles de valores distintos siempre hay un umbral que reduce la impureza por azar, y los árboles sin podar lo usan. La MDI sirve para una primera mirada, no para descartar variables. La permutación y SHAP no tienen ese sesgo."
+    },
+    {
+      "id": "m4-12",
+      "leccion": "06-interpretabilidad",
+      "pregunta": "Añades una copia casi exacta de `alcohol` al modelo y su importancia por permutación cae de 0.104 a 0.017. ¿Qué significa?",
+      "opciones": [
+        "`alcohol` ya no es relevante para el problema",
+        "La permutación reparte mal entre variables casi redundantes: barajar una deja la otra intacta y el modelo sigue leyéndola; importancia cero significa «redundante para este modelo», no «irrelevante»",
+        "Hay que usar MDI, que no tiene este problema",
+        "La copia tiene fuga de datos"
+      ],
+      "correcta": 1,
+      "explicacion": "Las dos juntas recuperan 0.137. Cuando se sabe que hay grupos correlacionados, se permutan por grupo. Y en general, ninguna de estas herramientas explica el mundo: explican el modelo, y su uso más valioso es auditar fugas antes de desplegar."
+    }
+  ]
+}

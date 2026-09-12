@@ -1,0 +1,135 @@
+{
+  "modulo": 1,
+  "preguntas": [
+    {
+      "id": "m1-01",
+      "leccion": "01-que-es-machine-learning",
+      "pregunta": "Un equipo quiere «predecir el riesgo de deserción» con el histórico de 400 estudiantes. Según la definición de Mitchell (T, P, E), ¿qué pieza falta todavía para tener un problema de ML bien planteado?",
+      "opciones": [
+        "La experiencia E: 400 estudiantes son muy pocos para aprender",
+        "Nada: con datos históricos ya se puede entrenar cualquier modelo",
+        "La tarea T y el desempeño P: «riesgo de deserción» no es una variable observable ni hay métrica definida",
+        "El algoritmo: sin elegir el modelo no se puede definir la tarea"
+      ],
+      "correcta": 2,
+      "explicacion": "La definición obliga a nombrar tarea, medida de desempeño y experiencia. «Riesgo de deserción» no es una variable; «no se matricula en el semestre siguiente» sí, y hace falta decir con qué métrica se medirá. El algoritmo se elige después de encuadrar el problema."
+    },
+    {
+      "id": "m1-02",
+      "leccion": "01-que-es-machine-learning",
+      "pregunta": "Tienes una tabla con 8 000 filas y 30 columnas de indicadores académicos, y te piden explicar cada decisión del modelo. ¿Cuál es la elección razonable según la lección?",
+      "opciones": [
+        "ML clásico, en particular ensambles de árboles",
+        "Deep learning: siempre gana cuando hay miles de registros",
+        "Aprendizaje por refuerzo, porque hay decisiones de por medio",
+        "Ninguna: con 30 columnas el problema es de causalidad, no de ML"
+      ],
+      "correcta": 0,
+      "explicacion": "En datos tabulares el ML clásico —y en especial el boosting— suele ganar al deep learning con menos datos, menos cómputo y más interpretabilidad. El aprendizaje por refuerzo no se trata de «hay decisiones», sino de un agente que interactúa con un entorno, y no se cubre en el curso."
+    },
+    {
+      "id": "m1-03",
+      "leccion": "02-ciclo-de-vida",
+      "pregunta": "Para predecir deserción, una variable —«cursos matriculados el semestre siguiente»— eleva el desempeño a casi perfecto. ¿Qué es lo correcto?",
+      "opciones": [
+        "Usarla: la métrica manda y el modelo será mejor en producción",
+        "Usarla solo en entrenamiento y quitarla en producción",
+        "Reemplazarla por su promedio para reducir la varianza",
+        "Descartarla: solo se conoce después del hecho que se quiere predecir (fuga de datos)"
+      ],
+      "correcta": 3,
+      "explicacion": "La pregunta que previene la fuga es «¿qué sabré en el momento de predecir?». Cuando se conoce ese dato el estudiante ya desertó o no; la variable no estará disponible al predecir. Que mejore las métricas es precisamente lo que la hace engañosa."
+    },
+    {
+      "id": "m1-04",
+      "leccion": "02-ciclo-de-vida",
+      "pregunta": "Después de veinte rondas de ajuste mirando el conjunto de prueba, el modelo llega a un F1 de 0.91. ¿Qué error de la etapa de evaluación se cometió?",
+      "opciones": [
+        "Ninguno: el conjunto de prueba existe para eso",
+        "El conjunto de prueba dejó de ser «no visto»: se usó muchas veces para decidir, y para eso están validación y validación cruzada",
+        "Se evaluó sobre los datos de entrenamiento",
+        "Se eligió una métrica técnica en vez de una de negocio"
+      ],
+      "correcta": 1,
+      "explicacion": "Cada decisión tomada mirando el conjunto de prueba filtra información hacia el modelo. Tras veinte decisiones, el 0.91 es optimista. El conjunto de prueba se aparta al principio y se toca una sola vez; el ajuste se hace con validación o validación cruzada."
+    },
+    {
+      "id": "m1-05",
+      "leccion": "03-versionado-codigo-datos",
+      "pregunta": "Un compañero hizo commit de un archivo `.env` con una contraseña, lo borró en el commit siguiente y subió los cambios. ¿Cuál es la situación?",
+      "opciones": [
+        "La contraseña sigue en el historial de Git; hay que rotarla y reescribir el historial",
+        "Resuelta: al borrar el archivo la contraseña desapareció del repositorio",
+        "Solo es un problema si el repositorio es público",
+        "Git ignora automáticamente los archivos `.env`"
+      ],
+      "correcta": 0,
+      "explicacion": "Git guarda instantáneas: un archivo borrado en un commit posterior sigue recuperable en los anteriores. La prevención es el `.gitignore` desde el primer commit; una vez expuesta, la credencial se considera comprometida."
+    },
+    {
+      "id": "m1-06",
+      "leccion": "03-versionado-codigo-datos",
+      "pregunta": "Quieres reproducir exactamente el experimento que dio 0.82 hace tres semanas, con el código y los datos de entonces. El dataset (2 GB) está gestionado con DVC. ¿Qué par de comandos lo reconstruye?",
+      "opciones": [
+        "`git pull` y `dvc push`",
+        "`git log` y `dvc add`",
+        "`git checkout <hash>` y `dvc checkout`",
+        "`git checkout main` y `dvc init`"
+      ],
+      "correcta": 2,
+      "explicacion": "Git restaura el código y el puntero `.dvc` de ese commit; `dvc checkout` trae la versión de los datos que corresponde a ese puntero. Git versiona el código, DVC los datos: hacen falta los dos para que un experimento sea reproducible."
+    },
+    {
+      "id": "m1-07",
+      "leccion": "04-algebra-lineal",
+      "pregunta": "En un KNN sobre estudiantes, la variable «asistencia» va de 0 a 100 y «promedio» de 0 a 5. Sin más preparación, ¿qué ocurre con las distancias?",
+      "opciones": [
+        "Nada: la distancia euclidiana pondera cada variable por su importancia",
+        "Quedan dominadas por la asistencia solo porque sus números son más grandes",
+        "Quedan dominadas por el promedio, que es la variable más informativa",
+        "KNN no usa distancias, así que la escala no importa"
+      ],
+      "correcta": 1,
+      "explicacion": "La distancia suma diferencias al cuadrado; una variable con rango 100 aporta cientos de veces más que una con rango 5, sin relación con su valor predictivo. Por eso todo algoritmo basado en distancias exige variables estandarizadas."
+    },
+    {
+      "id": "m1-08",
+      "leccion": "04-algebra-lineal",
+      "pregunta": "Lasso lleva algunos coeficientes exactamente a cero y Ridge solo los encoge. Según la lección, ¿de dónde viene esa diferencia?",
+      "opciones": [
+        "De que Lasso usa descenso del gradiente y Ridge la ecuación normal",
+        "De que Lasso penaliza con λ más grande por defecto",
+        "De que Ridge solo se aplica a variables estandarizadas",
+        "De la geometría de las normas: la bola L1 es un rombo con vértices sobre los ejes; la bola L2 es un círculo sin esquinas"
+      ],
+      "correcta": 3,
+      "explicacion": "La región ‖β‖₁ ≤ t tiene esquinas sobre los ejes, donde alguna coordenada vale cero; la solución tiende a caer en ellas. La región ‖β‖₂ ≤ t es redonda y no favorece coeficientes exactamente nulos. La diferencia es puramente geométrica."
+    },
+    {
+      "id": "m1-09",
+      "leccion": "05-calculo-y-probabilidad",
+      "pregunta": "Entrenas una red y, tras unas pocas iteraciones, la pérdida se vuelve `NaN`. ¿Cuál es el primer sospechoso según la lección?",
+      "opciones": [
+        "Un mínimo local",
+        "Muy pocas iteraciones",
+        "Una tasa de aprendizaje demasiado grande: el descenso diverge",
+        "La función de pérdida no es diferenciable"
+      ],
+      "correcta": 2,
+      "explicacion": "Por encima de cierto umbral de η el paso sobrepasa el mínimo y la pérdida crece en cada iteración hasta desbordarse. Un mínimo local no produce `NaN`, y con pocas iteraciones el problema sería no converger, no explotar."
+    },
+    {
+      "id": "m1-10",
+      "leccion": "05-calculo-y-probabilidad",
+      "pregunta": "Una condición afecta al 1 % de la población; una prueba tiene 99 % de sensibilidad y 95 % de especificidad. Alguien da positivo. ¿Qué tan probable es que tenga la condición?",
+      "opciones": [
+        "Alrededor del 17 %: los falsos positivos de la clase mayoritaria superan a los verdaderos positivos",
+        "Alrededor del 99 %, por la sensibilidad de la prueba",
+        "Alrededor del 95 %, por la especificidad",
+        "Exactamente el 1 %, la prevalencia no cambia"
+      ],
+      "correcta": 0,
+      "explicacion": "Por Bayes: 0.99·0.01 / (0.99·0.01 + 0.05·0.99) ≈ 0.167. La clase es tan rara que el 5 % de falsos positivos sobre el 99 % sano pesa más que el 99 % de aciertos sobre el 1 % enfermo. Es la razón por la que la accuracy engaña con clases desbalanceadas."
+    }
+  ]
+}

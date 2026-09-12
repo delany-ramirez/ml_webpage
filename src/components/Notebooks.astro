@@ -15,8 +15,9 @@ const lista = notebooksDe(modulo);
 
 /** Markdown inline mínimo de la tabla del README: `código` → <code>, $L_2$ → L<sub>2</sub>. */
 function descripcionHtml(texto: string): string {
-  const sinMath = texto.replace(/\$([^$]+)\$/g, (_, m: string) => m.replace(/_\{?(\w)\}?/g, "$1"));
-  return tituloHtml(sinMath).replace(/(\w)/g, "<sub>$1</sub>");
+  // Se marca el subíndice con «⟨⟩» antes de escapar, y se convierte a <sub> después.
+  const sinMath = texto.replace(/\$([^$]+)\$/g, (_, m: string) => m.replace(/_\{?(\w)\}?/g, "\u27e8$1\u27e9"));
+  return tituloHtml(sinMath).replace(/\u27e8(\w)\u27e9/g, "<sub>$1</sub>");
 }
 ---
 

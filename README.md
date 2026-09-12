@@ -26,6 +26,7 @@ Si ya clonaste sin submodules: `git submodule update --init --recursive`.
 | `npm run build` | Build de producción en `dist/` |
 | `npm run preview` | Sirve `dist/` localmente |
 | `npm run check` | Diagnóstico de tipos en `.astro`/`.ts` |
+| `npm run e2e` | Pruebas end-to-end por CDP (requiere `npm run preview` levantado) |
 | `git submodule update --remote content` | Trae la última versión del contenido |
 
 ## Estructura
@@ -40,9 +41,29 @@ src/
   layouts/          Base.astro
   components/       Nav, Footer, …
   pages/            rutas
-  scripts/          theme.ts, …
+  scripts/          theme.ts, progress.ts, …
   styles/global.css tokens (oscuro + claro) y componentes
+scripts/            check anti-soluciones y pruebas e2e
+wrangler.jsonc      Worker `ml-delanyr` (Cloudflare Workers Static Assets)
 ```
+
+## Despliegue
+
+El sitio se publica en **Cloudflare Workers** (Static Assets) con el Worker `ml-delanyr`,
+conectado a este repositorio mediante *Workers Builds*: cada `git push` a `main` construye y
+despliega. Configuración del proyecto en Cloudflare:
+
+| Campo | Valor |
+|---|---|
+| Build command | `git submodule update --init --recursive && npm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+| Node | `24` (leído de `.node-version`) |
+
+El submodule `content/` queda fijado al commit registrado en este repo. Para publicar
+contenido nuevo: `git submodule update --remote content`, commit y push.
+
+Deploy manual (requiere `npx wrangler login`): `npm run build && npx wrangler deploy`.
 
 ## Material del docente
 

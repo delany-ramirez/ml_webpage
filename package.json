@@ -3,6 +3,9 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "description": "Portal web del curso de Machine Learning — ml.delanyr.dev",
   "scripts": {
     "dev": "astro dev",

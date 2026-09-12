@@ -99,7 +99,7 @@ ml_webpage/
 | 2 | **Progreso** — `progress.ts`, marcar completada, barras por módulo y global, página `/progreso/` con exportar/importar/reiniciar | ✅ hecha | `3c6e7ca` |
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | `c591f9c` |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | `a6a43c0` |
-| 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ⬜ pendiente | |
+| 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | 🟡 en curso (falta conectar en Cloudflare y verificar) | |
 | 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ⬜ pendiente | |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |
 
@@ -297,15 +297,38 @@ foco gestionado en el drawer (abre → botón cerrar; cierra → botón Temario)
   con `npx lighthouse@12 <url> --only-categories=accessibility --chrome-flags=--headless=new`.
 
 
-### ⬜ Fase 5 — Deploy
+### 🟡 Fase 5 — Deploy (iniciada 2026-09-12)
 
-- [ ] `wrangler.jsonc`: `name: "ml-delanyr"`, `assets: { directory: "./dist", not_found_handling: "404-page" }`.
-- [ ] Repo `delany-ramirez/ml_webpage` en GitHub; push.
-- [ ] Cloudflare → Workers → conectar repo; build command
-      `git submodule update --init --recursive && npm run build`; deploy `npx wrangler deploy`.
-- [ ] Custom domain `ml.delanyr.dev` en el Worker.
-- [ ] Verificar en producción: HTTPS, 404 propio, sitemap, lección con LaTeX, progreso, widget.
-- [ ] `dr_webpage`: enlace a `ml.delanyr.dev` desde la sección Docencia (commit aparte en ese repo).
+- [x] `wrangler.jsonc`: `name: "ml-delanyr"`, `assets: { directory: "./dist", not_found_handling: "404-page" }`.
+      Validado con `npx wrangler@4 deploy --dry-run` (257 archivos de `dist/`).
+- [x] `.node-version` = `24` (misma versión que en local) y `engines.node >= 22` en `package.json`.
+- [x] Repo `delany-ramirez/ml_webpage` en GitHub (público); `main` sincronizado.
+- [x] Sección «Despliegue» en el README con los valores exactos del proyecto en Cloudflare.
+- [x] `dr_webpage`: campo `url`/`urlLabel` opcional en la colección `docencia`, entrada
+      «Machine Learning · Maestría en Ingeniería de Sistemas y Computación · 2026» primera
+      en la pestaña Docencia con botón «Portal del curso →» (commit en ese repo).
+- [ ] **(usuario, panel de Cloudflare)** Workers & Pages → Create → *Import a repository* →
+      `delany-ramirez/ml_webpage`. Nombre del Worker `ml-delanyr`; build command
+      `git submodule update --init --recursive && npm run build`; deploy command
+      `npx wrangler deploy`; rama `main`. Alternativa desde la terminal:
+      `npx wrangler@4 login` y `npm run build && npx wrangler@4 deploy` crea el Worker; luego
+      en Settings → Builds se conecta el repo.
+- [ ] **(usuario)** Custom domain `ml.delanyr.dev` en el Worker (Settings → Domains & Routes).
+      La zona `delanyr.dev` ya está en Cloudflare (la usa el portafolio), así que el registro
+      DNS lo crea el propio panel.
+- [ ] Verificar en producción: HTTPS, `/404` propio, `/sitemap-index.xml`, `/robots.txt`,
+      lección con LaTeX (M3·02), progreso en `localStorage`, widget de descenso del gradiente,
+      búsqueda Ctrl+K (`/pagefind/`).
+- [ ] Push de `dr_webpage` (el enlace del portafolio sale a producción con su propio deploy).
+
+Hallazgos:
+- El check anti-soluciones y Pagefind corren en `postbuild` también en Cloudflare; Pagefind
+  trae su binario para linux-x64 como dependencia opcional, sin pasos extra.
+- `allowScripts` de `package.json` solo lo interpreta npm ≥ 11; si el builder trae npm 10 lo
+  ignora y ejecuta los scripts de `esbuild`/`sharp` con normalidad. En ambos casos el build es
+  el mismo.
+- No se añade `wrangler` como devDependency (igual que en el portafolio): Workers Builds lo
+  aporta en `npx wrangler deploy` y en local `npx wrangler@4` basta para validar.
 
 ### ⬜ Fase 6 — Contenido interactivo (continua)
 

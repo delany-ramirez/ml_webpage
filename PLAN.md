@@ -102,6 +102,7 @@ ml_webpage/
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ✅ hecha | `c337350` · `db98b24` |
 | 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ primer hito (2026-09-12); sigue abierta al ritmo del contenido | `e34d969` |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |
+| 8 | *(al final)* **Automatizar la actualización del contenido** — GitHub Action en `machine_learning` que, en cada push a `main`, mueva el submodule `content/` de este repo y haga push (dispara el deploy). Requiere un token con permiso de escritura en `ml_webpage` guardado como secret en el repo de contenido | ⬜ pendiente, se hace de último | |
 
 Cada fase cierra con un commit `Fase N: ...` que incluye la actualización de este archivo.
 

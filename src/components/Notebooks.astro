@@ -1,0 +1,129 @@
+---
+/**
+ * Tarjetas de los notebooks de un módulo con botones Colab / GitHub / Descargar.
+ * Los datos salen del sistema de archivos del submodule (lib/notebooks-fs.ts); la descripción
+ * es la de la tabla «Notebooks» del README del módulo.
+ */
+import { notebooksDe } from "../lib/notebooks-fs";
+import { tituloHtml, nn } from "../lib/curso";
+
+interface Props {
+  modulo: number;
+}
+const { modulo } = Astro.props;
+const lista = notebooksDe(modulo);
+
+/** Markdown inline mínimo de la tabla del README: `código` → <code>, $L_2$ → L<sub>2</sub>. */
+function descripcionHtml(texto: string): string {
+  const sinMath = texto.replace(/\$([^$]+)\$/g, (_, m: string) => m.replace(/_\{?(\w)\}?/g, "$1"));
+  return tituloHtml(sinMath).replace(/(\w)/g, "<sub>$1</sub>");
+}
+---
+
+{lista.length > 0 && (
+  <section class="nbs rise d1" aria-labelledby="nbs-titulo">
+    <div class="nbs-head">
+      <span class="eyebrow" id="nbs-titulo">Notebooks</span>
+      <span class="nbs-nota">Ábrelos en Colab sin instalar nada, o descárgalos para el entorno local.</span>
+    </div>
+    <ul class="nbs-lista">
+      {lista.map((nb) => (
+        <li class="nb">
+          <div class="nb-cab">
+            <span class="n">{nn(nb.orden)}</span>
+            <h3 set:html={tituloHtml(nb.titulo)} />
+            {nb.tipo && <span class:list={["chip", "tipo", { gold: nb.tipo === "aplicado" }]}>{nb.tipo}</span>}
+          </div>
+          {nb.descripcion && <p set:html={descripcionHtml(nb.descripcion)} />}
+          <div class="nb-acciones">
+            <a class="btn btn-primary btn-sm" href={nb.colab} target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <circle cx="7" cy="12" r="3.5" /><circle cx="17" cy="12" r="3.5" /><path d="M10.5 12h3" />
+              </svg>
+              Abrir en Colab
+            </a>
+            <a class="btn btn-ghost btn-sm" href={nb.github} target="_blank" rel="noopener">Ver en GitHub</a>
+            <a class="btn btn-ghost btn-sm" href={nb.descarga} download={nb.archivo}>Descargar</a>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .nbs {
+    max-width: 72ch;
+    margin-bottom: 40px;
+  }
+  .nbs-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+    margin-bottom: 12px;
+  }
+  .nbs-nota {
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .nbs-lista {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+  }
+  .nb {
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .nb-cab {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+  }
+  .nb-cab .n {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--gold);
+  }
+  .nb-cab h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .nb-cab h3 :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    color: var(--gold);
+  }
+  .nb-cab .tipo {
+    font-size: 11px;
+    margin-left: auto;
+  }
+  .nb p {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .nb p :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0 0.3em;
+  }
+  .nb-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .nb-acciones .btn {
+    gap: 6px;
+  }
+</style>

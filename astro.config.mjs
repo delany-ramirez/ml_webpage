@@ -7,12 +7,13 @@ import rehypeKatex from "rehype-katex";
 import remarkQuitarH1 from "./src/plugins/remark-quitar-h1.ts";
 import remarkEnlacesContenido from "./src/plugins/remark-enlaces-contenido.ts";
 import remarkEnlacesCruzados from "./src/plugins/remark-enlaces-cruzados.ts";
+import notebooks from "./src/integrations/notebooks.ts";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://ml.delanyr.dev",
   trailingSlash: "always",
-  integrations: [mdx(), sitemap()],
+  integrations: [mdx(), sitemap(), notebooks()],
   markdown: {
     remarkPlugins: [remarkMath, remarkQuitarH1, remarkEnlacesContenido, remarkEnlacesCruzados],
     rehypePlugins: [rehypeKatex],

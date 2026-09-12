@@ -2,8 +2,10 @@
 import { getCollection, render } from "astro:content";
 import Curso from "../../../layouts/Curso.astro";
 import Cabecera from "../../../components/Cabecera.astro";
+import Notebooks from "../../../components/Notebooks.astro";
 import { MODULOS, parseLeccion, lecciones, ejerciciosDe, modulosConQuiz, tituloHtml, claveProgreso, nn } from "../../../lib/curso";
 import { modulosConAutoevaluacion, widgetsDe } from "../../../lib/interactivos";
+import { notebooksDe } from "../../../lib/notebooks-fs";
 
 export async function getStaticPaths() {
   const readmes = await getCollection("modulos");
@@ -23,6 +25,7 @@ const propias = todas.filter((l) => l.modulo.numero === modulo.numero);
 const ejercicios = await ejerciciosDe(modulo.numero);
 const tieneQuiz = (await modulosConQuiz()).has(modulo.numero);
 const tieneAuto = (await modulosConAutoevaluacion()).has(modulo.numero);
+const numNotebooks = notebooksDe(modulo.numero).length;
 const vacio = propias.length === 0;
 const [s0, s1] = modulo.sesiones;
 const sesiones = s0 === s1 ? `Sesión ${s0}` : `Sesiones ${s0}–${s1}`;
@@ -40,6 +43,7 @@ const nextMod = i < MODULOS.length - 1 ? MODULOS[i + 1] : null;
     ) : (
       <>
         <span class="chip gold">{propias.length} lecciones</span>
+        {numNotebooks > 0 && <span class="chip">{numNotebooks} notebooks</span>}
         {ejercicios.length > 0 && <span class="chip">{ejercicios.length} ejercicios</span>}
         {tieneAuto && <span class="chip">Autoevaluación</span>}
         {tieneQuiz && <span class="chip">Quiz</span>}
@@ -78,13 +82,15 @@ const nextMod = i < MODULOS.length - 1 ? MODULOS[i + 1] : null;
     </section>
   )}
 
+  {!vacio && <Notebooks modulo={modulo.numero} />}
+
   {Content && (
-    <article class="prose rise d1">
+    <article class="prose rise d2">
       <Content />
     </article>
   )}
 
-  <nav class="mods rise d2" aria-label="Otros módulos">
+  <nav class="mods rise d3" aria-label="Otros módulos">
     {prevMod ? <a href={`/modulo/${prevMod.numero}/`} class="btn btn-ghost btn-sm">← Módulo {prevMod.numero}: {prevMod.corto}</a> : <span />}
     {nextMod ? <a href={`/modulo/${nextMod.numero}/`} class="btn btn-ghost btn-sm">Módulo {nextMod.numero}: {nextMod.corto} →</a> : <span />}
   </nav>

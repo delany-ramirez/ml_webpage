@@ -476,6 +476,21 @@ footer.foot {
   border-radius: 5px;
   padding: 0.1em 0.4em;
 }
+/* Referencias cruzadas generadas por remark-enlaces-cruzados (`01-x.md` → lección) */
+.prose a code {
+  color: var(--gold);
+  border-color: var(--gold-soft);
+  transition: border-color 0.2s, background 0.2s;
+}
+.prose a:hover code {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.prose a.ref-externa code::after {
+  content: " ↗";
+  font-size: 0.8em;
+  color: var(--muted-2);
+}
 .prose pre {
   background: var(--code-bg) !important;
   border: 1px solid var(--line);

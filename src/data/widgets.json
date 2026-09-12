@@ -5,5 +5,33 @@
     "descripcion": "Mueve la tasa de aprendizaje y observa cómo el descenso converge, oscila o diverge sobre una función de costo convexa, y qué pasa con una no convexa.",
     "leccion": "3/02-descenso-gradiente",
     "alto": 560
+  },
+  {
+    "archivo": "sobreajuste-polinomico.html",
+    "titulo": "Sub y sobreajuste: grado del polinomio y curva de error",
+    "descripcion": "Sube el grado del polinomio y observa cómo el error de entrenamiento baja siempre mientras el de prueba dibuja una U; cambia el ruido y el tamaño de la muestra para ver de qué depende el mejor grado.",
+    "leccion": "3/05-sesgo-varianza-validacion",
+    "alto": 560
+  },
+  {
+    "archivo": "umbral-clasificacion.html",
+    "titulo": "Frontera logística, umbral, matriz de confusión y ROC",
+    "descripcion": "Mueve el umbral y mira cómo cambian la matriz de confusión y el punto sobre la ROC sin que cambie el modelo; ajusta la prevalencia y el costo relativo de un falso negativo para elegir el umbral por costo.",
+    "leccion": "4/03-metricas-clasificacion",
+    "alto": 640
+  },
+  {
+    "archivo": "kmeans.html",
+    "titulo": "K-Means paso a paso",
+    "descripcion": "Ejecuta las fases de asignación y actualización una a una, compara inicialización aleatoria y k-means++, y usa la curva del codo para elegir k.",
+    "leccion": "5/01-clustering",
+    "alto": 560
+  },
+  {
+    "archivo": "pca-2d.html",
+    "titulo": "PCA en dos dimensiones",
+    "descripcion": "Cambia la correlación y la escala de las variables y observa hacia dónde apunta la primera componente, cuánta varianza explica y qué se pierde al proyectar sobre ella; comprueba por qué hay que estandarizar.",
+    "leccion": "5/03-reduccion-dimensionalidad",
+    "alto": 540
   }
 ]

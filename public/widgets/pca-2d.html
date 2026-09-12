@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PCA en dos dimensiones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1219; --card: #151c27; --card-2: #1b2431;
+      --line: rgba(232,236,242,.12); --text: #e9edf3; --muted: #8b96a8;
+      --accent: #e3b058; --accent-soft: rgba(227,176,88,.16);
+      --ok: #5fd08a; --err: #e0705f; --info: #7fb2e5;
+      --font: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", monospace;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f5f0; --card: #ffffff; --card-2: #efece5;
+      --line: rgba(13,18,25,.12); --text: #141a22; --muted: #5b6673;
+      --accent: #b8862f; --accent-soft: rgba(184,134,47,.16);
+      --ok: #2f9e5b; --err: #c2483a; --info: #2f6fb0;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+    body { padding: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .mono { font-family: var(--mono); }
+    .fila { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 18px; margin-bottom: 12px; }
+    .ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctrl label b { color: var(--accent); font-weight: 500; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+    .botones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    button { font: inherit; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--card-2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .check { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; color: var(--muted); cursor: pointer; }
+    .check input { accent-color: var(--accent); }
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    canvas { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .lectura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+    .lectura div { background: var(--card-2); border-radius: 8px; padding: 8px 10px; }
+    .lectura span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+    .estado { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+    .estado b { font-weight: 500; }
+    .estado.ok b { color: var(--ok); } .estado.err b { color: var(--err); } .estado.warn b { color: var(--accent); }
+    @media (max-width: 720px) { .fila { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .fila, .graficos { grid-template-columns: 1fr; } .lectura { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="fila">
+      <div class="ctrl">
+        <label>correlación entre x₁ y x₂ <b id="r-v">0.80</b></label>
+        <input type="range" id="r" min="-0.95" max="0.95" step="0.05" value="0.8" />
+      </div>
+      <div class="ctrl">
+        <label>escala de x₂ respecto a x₁ <b id="e-v">1.0×</b></label>
+        <input type="range" id="e" min="0.2" max="5" step="0.1" value="1" />
+      </div>
+      <div class="ctrl">
+        <label>puntos n <b id="n-v">200</b></label>
+        <input type="range" id="n" min="30" max="500" step="10" value="200" />
+      </div>
+    </div>
+    <div class="botones">
+      <label class="check"><input type="checkbox" id="std" /> estandarizar antes de PCA</label>
+      <label class="check"><input type="checkbox" id="proy" /> proyectar sobre PC1 (reconstrucción con 1 componente)</label>
+      <button id="muestra" style="margin-left:auto">Nueva muestra</button>
+    </div>
+    <div class="graficos">
+      <canvas id="c1" height="300" aria-label="Datos originales con los ejes principales"></canvas>
+      <canvas id="c2" height="300" aria-label="Datos en el sistema de componentes principales"></canvas>
+    </div>
+    <div class="lectura">
+      <div><span>λ₁ · λ₂ (varianzas de las componentes)</span><span class="mono" id="l-lam">—</span></div>
+      <div><span>varianza explicada por PC1</span><span class="mono" id="l-ve">—</span></div>
+      <div><span>correlación entre PC1 y PC2</span><span class="mono" id="l-cor">—</span></div>
+      <div><span>ángulo de PC1</span><span class="mono" id="l-ang">—</span></div>
+    </div>
+    <p class="estado" id="estado"></p>
+  </div>
+
+  <script>
+    // ---------- contrato con el padre (tema y alto) ----------
+    (function () {
+      var q = new URLSearchParams(location.search).get("theme");
+      if (q === "light" || q === "dark") document.documentElement.setAttribute("data-theme", q);
+      window.addEventListener("message", function (e) {
+        var d = e.data || {};
+        if (d.type === "THEME_CHANGE" && (d.theme === "light" || d.theme === "dark")) {
+          document.documentElement.setAttribute("data-theme", d.theme);
+          dibujar();
+        }
+      });
+      function avisar() {
+        if (window.parent !== window) window.parent.postMessage({ type: "WIDGET_HEIGHT", height: document.documentElement.scrollHeight }, "*");
+      }
+      window.addEventListener("load", avisar);
+      if (window.ResizeObserver) new ResizeObserver(avisar).observe(document.body);
+    })();
+
+    const $ = id => document.getElementById(id);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+    function rng(semilla) {
+      let a = semilla >>> 0;
+      return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    }
+    function normal(r) { const u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+    let rho = 0.8, escala = 1, n = 200, semilla = 3;
+    let X = [], pca = null;
+
+    // ---------- datos: gaussiana bivariada con correlación rho; x2 escalada ----------
+    function muestrear() {
+      const r = rng(semilla);
+      X = Array.from({ length: n }, () => { const z1 = normal(r), z2 = normal(r); return [z1, escala * (rho * z1 + Math.sqrt(1 - rho * rho) * z2)]; });
+      calcular();
+    }
+
+    // ---------- PCA: centrar (y opcionalmente escalar), covarianza 2×2, vectores propios ----------
+    function calcular() {
+      const m = [0, 1].map(j => X.reduce((s, p) => s + p[j], 0) / n);
+      const sd = [0, 1].map(j => Math.sqrt(X.reduce((s, p) => s + (p[j] - m[j]) ** 2, 0) / (n - 1)));
+      const Z = X.map(p => [0, 1].map(j => (p[j] - m[j]) / ($("std").checked ? sd[j] : 1)));
+      const c = [[0, 0], [0, 0]];
+      for (const z of Z) { c[0][0] += z[0] * z[0]; c[0][1] += z[0] * z[1]; c[1][1] += z[1] * z[1]; }
+      c[0][0] /= n - 1; c[0][1] /= n - 1; c[1][0] = c[0][1]; c[1][1] /= n - 1;
+      // valores propios de una matriz simétrica 2×2 (forma cerrada)
+      const tr = c[0][0] + c[1][1], det = c[0][0] * c[1][1] - c[0][1] ** 2, raiz = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+      const l1 = tr / 2 + raiz, l2 = tr / 2 - raiz;
+      let v1 = Math.abs(c[0][1]) > 1e-12 ? [l1 - c[1][1], c[0][1]] : (c[0][0] >= c[1][1] ? [1, 0] : [0, 1]);
+      const nv = Math.hypot(...v1); v1 = [v1[0] / nv, v1[1] / nv]; if (v1[0] < 0) v1 = [-v1[0], -v1[1]];
+      const v2 = [-v1[1], v1[0]];
+      const S = Z.map(z => [z[0] * v1[0] + z[1] * v1[1], z[0] * v2[0] + z[1] * v2[1]]); // puntuaciones (scores)
+      const corS = S.reduce((s, p) => s + p[0] * p[1], 0) / Math.sqrt(S.reduce((s, p) => s + p[0] ** 2, 0) * S.reduce((s, p) => s + p[1] ** 2, 0) || 1);
+      pca = { m, sd, Z, c, l1, l2, v1, v2, S, corS };
+    }
+
+    // ---------- lectura ----------
+    function leer() {
+      const { l1, l2, v1, corS, c } = pca, ve = l1 / (l1 + l2);
+      $("l-lam").textContent = l1.toFixed(2) + " · " + l2.toFixed(2);
+      $("l-ve").textContent = (ve * 100).toFixed(1) + " %";
+      $("l-cor").textContent = corS.toFixed(3);
+      $("l-ang").textContent = (Math.atan2(v1[1], v1[0]) * 180 / Math.PI).toFixed(1) + "°";
+      const e = $("estado"); e.className = "estado";
+      const corX = c[0][1] / Math.sqrt(c[0][0] * c[1][1]);
+      if (!$("std").checked && escala >= 2.5) { e.className += " err"; e.innerHTML = "<b>La escala manda:</b> x₂ tiene " + escala.toFixed(1) + "× la desviación de x₁, así que PC1 se alinea con x₂ (ángulo ≈ 90°) sin importar la correlación. PCA maximiza varianza, y la varianza depende de las unidades. Marca «estandarizar»."; }
+      else if (!$("std").checked && escala <= 0.4) { e.className += " err"; e.innerHTML = "<b>La escala manda:</b> x₂ tiene " + escala.toFixed(1) + "× la desviación de x₁, así que PC1 se pega a x₁ (ángulo ≈ 0°). Marca «estandarizar» para que las dos variables cuenten por igual."; }
+      else if ($("std").checked) { e.className += " ok"; e.innerHTML = "<b>Con variables estandarizadas</b>, PCA es sobre la matriz de correlación: PC1 va siempre a 45° (o −45°) y explica (1 + |ρ|)/2 = " + ((1 + Math.abs(corX)) / 2 * 100).toFixed(0) + " % de la varianza. Cuanto más correlacionadas, más redundantes: más comprime la primera componente."; }
+      else if ($("proy").checked) { e.className += " warn"; e.innerHTML = "<b>Reconstrucción con una componente.</b> Cada punto se sustituye por su proyección sobre PC1; los segmentos rojos son lo que se pierde. Ese error es exactamente λ₂ = " + l2.toFixed(2) + ", el " + ((1 - ve) * 100).toFixed(0) + " % de la varianza total. Es la aproximación de rango bajo del módulo 1 (Eckart–Young)."; }
+      else if (Math.abs(corX) < 0.15) { e.className += " warn"; e.innerHTML = "<b>Casi sin correlación:</b> las dos componentes explican parecido (" + (ve * 100).toFixed(0) + " % / " + (100 - ve * 100).toFixed(0) + " %). No hay dirección que resuma a las demás: PCA no comprime nada aquí."; }
+      else { e.innerHTML = "PC1 es el vector propio de la covarianza con mayor valor propio: la dirección de máxima varianza. PC2 es perpendicular, y en el nuevo sistema (derecha) las coordenadas no están correlacionadas (" + corS.toFixed(3) + "). Activa «proyectar» para ver cuánto se pierde con una sola componente."; }
+    }
+
+    // ---------- dibujo ----------
+    function prep(c) {
+      const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = 300;
+      c.width = W * dpr; c.height = H * dpr; c.style.height = H + "px";
+      const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+    function ejes(ctx, W, H, Xp, Yp, etX, etY, colLine, colMuted) {
+      ctx.strokeStyle = colLine; ctx.lineWidth = 1; ctx.fillStyle = colMuted; ctx.font = "11px IBM Plex Mono, monospace";
+      for (let v = -10; v <= 10; v += 1) { ctx.beginPath(); ctx.moveTo(Xp(v), 0); ctx.lineTo(Xp(v), H); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, Yp(v)); ctx.lineTo(W, Yp(v)); ctx.stroke(); }
+      ctx.fillText(etX, W - 8 - ctx.measureText(etX).width, H - 8); ctx.fillText(etY, 8, 14);
+    }
+    function flecha(ctx, x0, y0, x1, y1, col, w) {
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      const a = Math.atan2(y1 - y0, x1 - x0); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - 9 * Math.cos(a - 0.4), y1 - 9 * Math.sin(a - 0.4)); ctx.lineTo(x1 - 9 * Math.cos(a + 0.4), y1 - 9 * Math.sin(a + 0.4)); ctx.closePath(); ctx.fill();
+    }
+    function dibujar() {
+      const colText = css("--text"), colMuted = css("--muted"), colLine = css("--line"), colAcc = css("--accent"), colInfo = css("--info"), colErr = css("--err");
+      const { Z, l1, l2, v1, v2, S } = pca, std = $("std").checked, proy = $("proy").checked;
+      // --- c1: datos (centrados; escalados si std) con ejes principales ---
+      const g1 = prep($("c1")), ctx = g1.ctx, W = g1.W, H = g1.H;
+      const rango = Math.max(...Z.map(z => Math.max(Math.abs(z[0]), Math.abs(z[1])))) * 1.1 + 0.2;
+      const esc = Math.min(W, H) / (2 * rango), Xp = x => W / 2 + x * esc, Yp = y => H / 2 - y * esc;
+      ctx.clearRect(0, 0, W, H); ejes(ctx, W, H, Xp, Yp, std ? "x₁ (z)" : "x₁", std ? "x₂ (z)" : "x₂", colLine, colMuted);
+      if (proy) { // segmento de cada punto a su proyección sobre PC1 (el error de reconstrucción)
+        ctx.strokeStyle = colErr + "88"; ctx.lineWidth = 1;
+        Z.forEach((z, i) => { const p = [S[i][0] * v1[0], S[i][0] * v1[1]]; ctx.beginPath(); ctx.moveTo(Xp(z[0]), Yp(z[1])); ctx.lineTo(Xp(p[0]), Yp(p[1])); ctx.stroke(); });
+      }
+      ctx.fillStyle = proy ? colMuted + "66" : colInfo + "bb";
+      for (const z of Z) { ctx.beginPath(); ctx.arc(Xp(z[0]), Yp(z[1]), 3, 0, Math.PI * 2); ctx.fill(); }
+      if (proy) { ctx.fillStyle = colAcc; S.forEach(s => { ctx.beginPath(); ctx.arc(Xp(s[0] * v1[0]), Yp(s[0] * v1[1]), 2.6, 0, Math.PI * 2); ctx.fill(); }); }
+      const L1 = 2 * Math.sqrt(l1), L2 = 2 * Math.sqrt(l2); // longitud ∝ 2 desviaciones en cada dirección
+      flecha(ctx, Xp(0), Yp(0), Xp(v1[0] * L1), Yp(v1[1] * L1), colAcc, 2.5);
+      flecha(ctx, Xp(0), Yp(0), Xp(v2[0] * L2), Yp(v2[1] * L2), colInfo, 2.5);
+      ctx.fillStyle = colAcc; ctx.fillText("PC1", Xp(v1[0] * L1) + 6, Yp(v1[1] * L1) - 6);
+      ctx.fillStyle = colInfo; ctx.fillText("PC2", Xp(v2[0] * L2) + 6, Yp(v2[1] * L2) - 6);
+      // --- c2: puntuaciones (datos rotados al sistema de componentes) ---
+      const g2 = prep($("c2")), c2 = g2.ctx, W2 = g2.W, H2 = g2.H;
+      const esc2 = Math.min(W2, H2) / (2 * rango), X2 = x => W2 / 2 + x * esc2, Y2 = y => H2 / 2 - y * esc2;
+      c2.clearRect(0, 0, W2, H2); ejes(c2, W2, H2, X2, Y2, "PC1", "PC2", colLine, colMuted);
+      c2.fillStyle = colInfo + "bb";
+      for (const s of S) { c2.beginPath(); c2.arc(X2(s[0]), Y2(proy ? 0 : s[1]), 3, 0, Math.PI * 2); c2.fill(); }
+      flecha(c2, X2(0), Y2(0), X2(L1), Y2(0), colAcc, 2.5); flecha(c2, X2(0), Y2(0), X2(0), Y2(L2), colInfo, 2.5);
+      // barras de varianza explicada
+      const ve = l1 / (l1 + l2), bx = W2 - 118, by = 24;
+      c2.fillStyle = colMuted; c2.fillText("varianza explicada", bx, by - 6);
+      c2.fillStyle = colAcc; c2.fillRect(bx, by, 100 * ve, 8); c2.fillStyle = colInfo; c2.fillRect(bx + 100 * ve, by, 100 * (1 - ve), 8);
+      c2.fillStyle = colText; c2.fillText((ve * 100).toFixed(0) + " % · " + ((1 - ve) * 100).toFixed(0) + " %", bx, by + 20);
+    }
+
+    // ---------- eventos ----------
+    const todo = () => { calcular(); dibujar(); leer(); };
+    $("r").addEventListener("input", e => { rho = +e.target.value; $("r-v").textContent = rho.toFixed(2); muestrear(); dibujar(); leer(); });
+    $("e").addEventListener("input", e => { escala = +e.target.value; $("e-v").textContent = escala.toFixed(1) + "×"; muestrear(); dibujar(); leer(); });
+    $("n").addEventListener("input", e => { n = +e.target.value; $("n-v").textContent = n; muestrear(); dibujar(); leer(); });
+    $("std").addEventListener("change", todo); $("proy").addEventListener("change", () => { dibujar(); leer(); });
+    $("muestra").addEventListener("click", () => { semilla = (semilla * 31 + 17) % 100003; muestrear(); dibujar(); leer(); });
+    window.addEventListener("resize", dibujar);
+    muestrear(); dibujar(); leer();
+  </script>
+</body>
+</html>

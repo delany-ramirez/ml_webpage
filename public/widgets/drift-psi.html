@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoreo: PSI, carta de control y reentrenamiento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1219; --card: #151c27; --card-2: #1b2431;
+      --line: rgba(232,236,242,.12); --text: #e9edf3; --muted: #8b96a8;
+      --accent: #e3b058; --accent-soft: rgba(227,176,88,.16);
+      --ok: #5fd08a; --err: #e0705f; --info: #7fb2e5;
+      --font: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", monospace;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f5f0; --card: #ffffff; --card-2: #efece5;
+      --line: rgba(13,18,25,.12); --text: #141a22; --muted: #5b6673;
+      --accent: #b8862f; --accent-soft: rgba(184,134,47,.16);
+      --ok: #2f9e5b; --err: #c2483a; --info: #2f6fb0;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+    body { padding: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .mono { font-family: var(--mono); }
+    .fila { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px 18px; margin-bottom: 12px; }
+    .ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctrl label b { color: var(--accent); font-weight: 500; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+    .botones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    button { font: inherit; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--card-2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+    .seg button { border: 0; border-radius: 0; }
+    .seg button.on { background: var(--accent-soft); color: var(--accent); }
+    .seg-et { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    canvas { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .lectura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+    .lectura div { background: var(--card-2); border-radius: 8px; padding: 8px 10px; }
+    .lectura span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+    .estado { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+    .estado b { font-weight: 500; }
+    .estado.ok b { color: var(--ok); } .estado.err b { color: var(--err); } .estado.warn b { color: var(--accent); }
+    @media (max-width: 760px) { .fila { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .fila, .graficos { grid-template-columns: 1fr; } .lectura { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="fila">
+      <div class="ctrl">
+        <label>mes del drift de datos <b id="md-v">13</b></label>
+        <input type="range" id="md" min="13" max="24" step="1" value="13" />
+      </div>
+      <div class="ctrl">
+        <label>magnitud (desplaza x₁) <b id="dd-v">1.0 σ</b></label>
+        <input type="range" id="dd" min="0" max="2" step="0.1" value="1" />
+      </div>
+      <div class="ctrl">
+        <label>mes del drift de concepto <b id="mc-v">19</b></label>
+        <input type="range" id="mc" min="13" max="24" step="1" value="19" />
+      </div>
+      <div class="ctrl">
+        <label>magnitud (cambia el efecto de x₂) <b id="dc-v">70 %</b></label>
+        <input type="range" id="dc" min="0" max="1" step="0.05" value="0.7" />
+      </div>
+    </div>
+    <div class="botones">
+      <span class="seg-et">Reentrenar al cerrar el mes 20 con:</span>
+      <div class="seg" role="group" aria-label="Política de reentrenamiento">
+        <button class="on" data-pol="nada">nada</button>
+        <button data-pol="todo">todo el historial</button>
+        <button data-pol="ventana">últimos 6 meses</button>
+        <button data-pol="cambio">desde el cambio</button>
+      </div>
+      <button id="muestra" style="margin-left:auto">Nueva simulación</button>
+    </div>
+    <div class="graficos">
+      <canvas id="c1" height="340" aria-label="PSI de las entradas y media de las predicciones por mes"></canvas>
+      <canvas id="c2" height="340" aria-label="RMSE por mes con carta de control"></canvas>
+    </div>
+    <div class="lectura">
+      <div><span>PSI x₁ · x₂ (último mes)</span><span class="mono" id="l-psi">—</span></div>
+      <div><span>RMSE referencia (meses 1–12)</span><span class="mono" id="l-ref">—</span></div>
+      <div><span>RMSE meses 21–24</span><span class="mono" id="l-fin">—</span></div>
+      <div><span>alarmas</span><span class="mono" id="l-al">—</span></div>
+    </div>
+    <p class="estado" id="estado"></p>
+  </div>
+
+  <script>
+    // ---------- contrato con el padre (tema y alto) ----------
+    (function () {
+      var q = new URLSearchParams(location.search).get("theme");
+      if (q === "light" || q === "dark") document.documentElement.setAttribute("data-theme", q);
+      window.addEventListener("message", function (e) {
+        var d = e.data || {};
+        if (d.type === "THEME_CHANGE" && (d.theme === "light" || d.theme === "dark")) {
+          document.documentElement.setAttribute("data-theme", d.theme);
+          dibujar();
+        }
+      });
+      function avisar() {
+        if (window.parent !== window) window.parent.postMessage({ type: "WIDGET_HEIGHT", height: document.documentElement.scrollHeight }, "*");
+      }
+      window.addEventListener("load", avisar);
+      if (window.ResizeObserver) new ResizeObserver(avisar).observe(document.body);
+    })();
+
+    const $ = id => document.getElementById(id);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const MESES = 24, N_MES = 300, REF = 12, SIGMA = 0.35;
+
+    function rng(semilla) {
+      let a = semilla >>> 0;
+      return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    }
+    function normal(r) { const u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+    let mesDatos = 13, magDatos = 1, mesConcepto = 19, magConcepto = 0.7, politica = "nada", semilla = 2;
+    let meses = [], modelo = null, modeloRe = null, rmse = [], psi = [], predMedia = [], ctrl = null;
+
+    // ---------- simulación: y = 3 + 0.5·x1 + 0.6·x2 + ε; x1 se desplaza (datos); el efecto de x2 cae (concepto) ----------
+    function simular() {
+      const r = rng(semilla);
+      meses = [];
+      for (let m = 1; m <= MESES; m++) {
+        const shift = m >= mesDatos ? magDatos : 0, b2 = m >= mesConcepto ? 0.6 * (1 - magConcepto) : 0.6, b0 = m >= mesConcepto ? 3 + 0.6 * magConcepto * 0.5 : 3;
+        const filas = [];
+        for (let i = 0; i < N_MES; i++) { const x1 = normal(r) + shift, x2 = normal(r); filas.push({ x1, x2, y: b0 + 0.5 * x1 + b2 * x2 + SIGMA * normal(r) }); }
+        meses.push(filas);
+      }
+      modelo = ajustar(meses.slice(0, REF).flat());
+      const desde = { todo: 0, ventana: 14, cambio: mesConcepto - 1 }[politica];
+      modeloRe = politica === "nada" ? null : ajustar(meses.slice(Math.min(desde, 19), 20).flat());
+      evaluar();
+    }
+    // mínimos cuadrados con intercepto (3×3 por ecuación normal)
+    function ajustar(D) {
+      const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], b = [0, 0, 0];
+      for (const d of D) { const f = [1, d.x1, d.x2]; for (let i = 0; i < 3; i++) { b[i] += f[i] * d.y; for (let j = 0; j < 3; j++) A[i][j] += f[i] * f[j]; } }
+      const M = A.map((f, i) => [...f, b[i]]);
+      for (let c = 0; c < 3; c++) { let p = c; for (let k = c + 1; k < 3; k++) if (Math.abs(M[k][c]) > Math.abs(M[p][c])) p = k; [M[c], M[p]] = [M[p], M[c]]; for (let k = 0; k < 3; k++) { if (k === c) continue; const f = M[k][c] / M[c][c]; for (let j = c; j <= 3; j++) M[k][j] -= f * M[c][j]; } }
+      return M.map((f, i) => f[3] / f[i]);
+    }
+    const predecir = (beta, d) => beta[0] + beta[1] * d.x1 + beta[2] * d.x2;
+
+    // PSI con 10 cuantiles de la referencia
+    function cortes(v) { const s = [...v].sort((a, b) => a - b); return Array.from({ length: 9 }, (_, i) => s[Math.floor((i + 1) / 10 * s.length)]); }
+    function fracciones(v, c) { const f = new Array(10).fill(0); for (const x of v) { let b = 0; while (b < 9 && x > c[b]) b++; f[b]++; } return f.map(k => k / v.length); }
+    function PSI(ref, nuevo, c) { const p = fracciones(ref, c), q = fracciones(nuevo, c); return p.reduce((s, pb, i) => { const qb = Math.max(q[i], 1e-4), pb2 = Math.max(pb, 1e-4); return s + (qb - pb2) * Math.log(qb / pb2); }, 0); }
+
+    function evaluar() {
+      const ref = meses.slice(0, REF).flat();
+      const c1 = cortes(ref.map(d => d.x1)), c2 = cortes(ref.map(d => d.x2)), cp = cortes(ref.map(d => predecir(modelo, d)));
+      rmse = []; psi = []; predMedia = [];
+      meses.forEach((filas, i) => {
+        const beta = modeloRe && i >= 20 ? modeloRe : modelo; // el modelo reentrenado sirve desde el mes 21
+        rmse.push(Math.sqrt(filas.reduce((s, d) => s + (predecir(beta, d) - d.y) ** 2, 0) / filas.length));
+        const pr = filas.map(d => predecir(modelo, d));
+        psi.push({ x1: PSI(ref.map(d => d.x1), filas.map(d => d.x1), c1), x2: PSI(ref.map(d => d.x2), filas.map(d => d.x2), c2), pred: PSI(ref.map(d => predecir(modelo, d)), pr, cp) });
+        predMedia.push(pr.reduce((s, v) => s + v, 0) / pr.length);
+      });
+      const rr = rmse.slice(0, REF), mu = rr.reduce((s, v) => s + v, 0) / REF, sd = Math.sqrt(rr.reduce((s, v) => s + (v - mu) ** 2, 0) / (REF - 1));
+      ctrl = { mu, sd, lim: mu + 3 * sd };
+    }
+
+    // ---------- lectura ----------
+    function leer() {
+      const u = MESES - 1, fin = rmse.slice(20), rFin = fin.reduce((s, v) => s + v, 0) / fin.length;
+      $("l-psi").textContent = psi[u].x1.toFixed(2) + " · " + psi[u].x2.toFixed(2);
+      $("l-ref").textContent = ctrl.mu.toFixed(3) + " ± " + ctrl.sd.toFixed(3);
+      $("l-fin").textContent = rFin.toFixed(3);
+      const alPsi = psi.findIndex(p => Math.max(p.x1, p.x2) > 0.25), alRmse = rmse.findIndex((v, i) => i >= REF && v > ctrl.lim);
+      $("l-al").textContent = (alPsi >= 0 ? "PSI mes " + (alPsi + 1) : "PSI —") + " · " + (alRmse >= 0 ? "RMSE mes " + (alRmse + 1) : "RMSE —");
+      const e = $("estado"); e.className = "estado";
+      const hayDatos = magDatos > 0.2 && alPsi >= 0, hayConcepto = magConcepto > 0.15 && alRmse >= 0;
+      if (politica !== "nada") {
+        const antes = rmse[19], nombre = { todo: "todo el historial", ventana: "los últimos 6 meses", cambio: "solo desde el cambio (mes " + mesConcepto + ")" }[politica];
+        e.className += rFin < ctrl.lim ? " ok" : " warn";
+        e.innerHTML = "<b>Reentrenado con " + nombre + ":</b> RMSE en 21–24 = " + rFin.toFixed(3) + " (antes del reentrenamiento: " + antes.toFixed(3) + "; referencia " + ctrl.mu.toFixed(3) + "). " + (politica === "todo" && hayConcepto ? "Los meses anteriores al cambio describen una relación que ya no existe y diluyen la nueva: más datos no es mejor." : politica === "cambio" ? "Los datos posteriores al cambio son los únicos que describen la relación vigente." : "Compara con las otras políticas: la que gana depende de qué cambió.");
+      }
+      else if (hayDatos && !hayConcepto) { e.className += " warn"; e.innerHTML = "<b>PSI alto sin daño:</b> x₁ se desplazó (drift de datos) y las predicciones se movieron, pero el RMSE sigue dentro de la carta. El modelo es correcto en la región nueva. Una alarma de PSI obliga a comprobar, no a reentrenar."; }
+      else if (hayConcepto && !hayDatos) { e.className += " err"; e.innerHTML = "<b>Drift de concepto sin aviso:</b> las entradas se ven iguales (PSI bajo) y el RMSE se sale de la carta en el mes " + (alRmse + 1) + ". Solo la etiqueta lo ve; por eso hace falta la capa 2. Prueba las políticas de reentrenamiento."; }
+      else if (hayDatos && hayConcepto) { e.className += " err"; e.innerHTML = "<b>Dos cambios distintos:</b> en el mes " + (alPsi + 1) + " el PSI de x₁ salta y el RMSE no (drift de datos, sin daño); en el mes " + (alRmse + 1) + " el PSI no se mueve y el RMSE sí (drift de concepto). La capa 1 vio el primero; solo la capa 2 ve el segundo."; }
+      else if (magConcepto <= 0.15 && magDatos <= 0.2) { e.className += " ok"; e.innerHTML = "<b>Sin cambios relevantes:</b> PSI bajo y RMSE dentro de la carta de control (media ± 3σ de los meses 1–12). Sube las magnitudes para plantar un drift."; }
+      else e.innerHTML = "Capa 1 (izquierda): PSI por variable (< 0.1 sin cambio, 0.1–0.25 moderado, > 0.25 importante) y media de las predicciones. Capa 2 (derecha): RMSE mensual contra la carta de control, disponible solo cuando llegan las etiquetas.";
+    }
+
+    // ---------- dibujo ----------
+    function prep(c) {
+      const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = window.innerWidth <= 560 ? 300 : 340;
+      c.width = W * dpr; c.height = H * dpr; c.style.height = H + "px";
+      const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+    function dibujar() {
+      const colText = css("--text"), colMuted = css("--muted"), colLine = css("--line"), colAcc = css("--accent"), colInfo = css("--info"), colErr = css("--err"), colOk = css("--ok");
+      // --- c1: PSI (arriba) y media de predicción (abajo) ---
+      const g1 = prep($("c1")), ctx = g1.ctx, W = g1.W, H = g1.H, m = { l: 40, r: 10 }, mitad = Math.round(H * 0.6);
+      ctx.clearRect(0, 0, W, H); ctx.font = "11px IBM Plex Mono, monospace";
+      const Xm = i => m.l + (i + 0.5) / MESES * (W - m.l - m.r), ancho = (W - m.l - m.r) / MESES;
+      const topPsi = Math.max(0.6, ...psi.map(p => Math.max(p.x1, p.x2))) * 1.1, Yp = v => mitad - 24 - Math.min(1, v / topPsi) * (mitad - 24 - 16);
+      ctx.strokeStyle = colLine; ctx.fillStyle = colMuted;
+      [0.1, 0.25].forEach(u => { ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(m.l, Yp(u)); ctx.lineTo(W - m.r, Yp(u)); ctx.stroke(); ctx.setLineDash([]); ctx.fillText(u, 8, Yp(u) + 4); });
+      ctx.fillText("PSI por mes  ▮ x₁  ▮ x₂", m.l + 4, 12);
+      ctx.fillStyle = colMuted + "18"; ctx.fillRect(m.l, 16, Xm(REF - 1) + ancho / 2 - m.l, H - 16 - 18);
+      psi.forEach((p, i) => {
+        const x = Xm(i);
+        ctx.fillStyle = p.x1 > 0.25 ? colErr : colAcc; ctx.fillRect(x - ancho * 0.4, Yp(p.x1), ancho * 0.38, Yp(0) - Yp(p.x1));
+        ctx.fillStyle = p.x2 > 0.25 ? colErr : colInfo; ctx.fillRect(x + ancho * 0.02, Yp(p.x2), ancho * 0.38, Yp(0) - Yp(p.x2));
+      });
+      ctx.fillStyle = colMuted; ctx.fillText("referencia (1–12)", m.l + 4, mitad - 30);
+      // media de la predicción
+      const pm = predMedia, lo = Math.min(...pm) - 0.1, hi = Math.max(...pm) + 0.1, Yq = v => H - 20 - (v - lo) / (hi - lo) * (H - 20 - mitad - 4);
+      ctx.strokeStyle = colLine; ctx.beginPath(); ctx.moveTo(m.l, Yq(pm[0])); ctx.lineTo(W - m.r, Yq(pm[0])); ctx.stroke();
+      ctx.fillStyle = colMuted; ctx.fillText("media de la predicción", m.l + 4, mitad + 8); ctx.fillText(pm[0].toFixed(2), 8, Yq(pm[0]) + 4);
+      ctx.strokeStyle = colText; ctx.lineWidth = 2; ctx.beginPath(); pm.forEach((v, i) => i ? ctx.lineTo(Xm(i), Yq(v)) : ctx.moveTo(Xm(i), Yq(v))); ctx.stroke(); ctx.lineWidth = 1;
+      for (let i = 0; i < MESES; i += 3) { ctx.fillStyle = colMuted; ctx.fillText(i + 1, Xm(i) - 4, H - 6); }
+      // --- c2: RMSE con carta de control ---
+      const g2 = prep($("c2")), c2 = g2.ctx, W2 = g2.W, H2 = g2.H, m2 = { l: 44, r: 10, t: 16, b: 24 };
+      c2.clearRect(0, 0, W2, H2); c2.font = "11px IBM Plex Mono, monospace";
+      const X2 = i => m2.l + (i + 0.5) / MESES * (W2 - m2.l - m2.r), yMax = Math.max(ctrl.lim * 1.15, ...rmse) * 1.05, yMin = Math.min(...rmse) * 0.9;
+      const Y2 = v => H2 - m2.b - (v - yMin) / (yMax - yMin) * (H2 - m2.t - m2.b);
+      c2.fillStyle = colMuted + "18"; c2.fillRect(m2.l, m2.t, X2(REF - 1) + (W2 - m2.l - m2.r) / MESES / 2 - m2.l, H2 - m2.t - m2.b);
+      c2.strokeStyle = colLine; c2.fillStyle = colMuted;
+      for (let i = 0; i <= 4; i++) { const v = yMin + (yMax - yMin) * i / 4; c2.beginPath(); c2.moveTo(m2.l, Y2(v)); c2.lineTo(W2 - m2.r, Y2(v)); c2.stroke(); c2.fillText(v.toFixed(2), 6, Y2(v) + 4); }
+      for (let i = 0; i < MESES; i += 3) c2.fillText(i + 1, X2(i) - 4, H2 - 8);
+      c2.fillText("RMSE por mes (cuando llegan las etiquetas)", m2.l + 4, m2.t - 4);
+      // carta: media y límite 3σ
+      c2.strokeStyle = colOk; c2.setLineDash([4, 3]); c2.beginPath(); c2.moveTo(m2.l, Y2(ctrl.mu)); c2.lineTo(W2 - m2.r, Y2(ctrl.mu)); c2.stroke();
+      c2.strokeStyle = colErr; c2.beginPath(); c2.moveTo(m2.l, Y2(ctrl.lim)); c2.lineTo(W2 - m2.r, Y2(ctrl.lim)); c2.stroke(); c2.setLineDash([]);
+      c2.fillStyle = colErr; c2.fillText("media + 3σ", W2 - m2.r - 70, Y2(ctrl.lim) - 4); c2.fillStyle = colOk; c2.fillText("media ref.", W2 - m2.r - 70, Y2(ctrl.mu) + 12);
+      // marcas de los eventos y del reentrenamiento
+      const marca = (mes, col, t) => { c2.strokeStyle = col; c2.setLineDash([2, 3]); c2.beginPath(); c2.moveTo(X2(mes - 1) - (W2 - m2.l - m2.r) / MESES / 2, m2.t); c2.lineTo(X2(mes - 1) - (W2 - m2.l - m2.r) / MESES / 2, H2 - m2.b); c2.stroke(); c2.setLineDash([]); c2.fillStyle = col; c2.fillText(t, X2(mes - 1) - 2, m2.t + 12); };
+      if (magDatos > 0) marca(mesDatos, colAcc, "datos"); if (magConcepto > 0) marca(mesConcepto, colErr, "concepto"); if (politica !== "nada") marca(21, colInfo, "reentr.");
+      c2.strokeStyle = colText; c2.lineWidth = 2; c2.beginPath(); rmse.forEach((v, i) => i ? c2.lineTo(X2(i), Y2(v)) : c2.moveTo(X2(i), Y2(v))); c2.stroke(); c2.lineWidth = 1;
+      rmse.forEach((v, i) => { c2.beginPath(); c2.arc(X2(i), Y2(v), 3.5, 0, Math.PI * 2); c2.fillStyle = i >= REF && v > ctrl.lim ? colErr : (i >= 20 && politica !== "nada" ? colInfo : colText); c2.fill(); });
+    }
+
+    // ---------- eventos ----------
+    const todo = () => { simular(); dibujar(); leer(); };
+    $("md").addEventListener("input", e => { mesDatos = +e.target.value; $("md-v").textContent = mesDatos; todo(); });
+    $("dd").addEventListener("input", e => { magDatos = +e.target.value; $("dd-v").textContent = magDatos.toFixed(1) + " σ"; todo(); });
+    $("mc").addEventListener("input", e => { mesConcepto = +e.target.value; $("mc-v").textContent = mesConcepto; todo(); });
+    $("dc").addEventListener("input", e => { magConcepto = +e.target.value; $("dc-v").textContent = Math.round(magConcepto * 100) + " %"; todo(); });
+    $("muestra").addEventListener("click", () => { semilla = (semilla * 31 + 17) % 100003; todo(); });
+    document.querySelectorAll("[data-pol]").forEach(b => b.addEventListener("click", () => { politica = b.dataset.pol; document.querySelectorAll("[data-pol]").forEach(x => x.classList.toggle("on", x === b)); todo(); }));
+    window.addEventListener("resize", dibujar);
+    todo();
+  </script>
+</body>
+</html>

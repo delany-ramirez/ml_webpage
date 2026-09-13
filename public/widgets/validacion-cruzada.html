@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Validación cruzada y comparación pareada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1219; --card: #151c27; --card-2: #1b2431;
+      --line: rgba(232,236,242,.12); --text: #e9edf3; --muted: #8b96a8;
+      --accent: #e3b058; --accent-soft: rgba(227,176,88,.16);
+      --ok: #5fd08a; --err: #e0705f; --info: #7fb2e5;
+      --font: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", monospace;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f5f0; --card: #ffffff; --card-2: #efece5;
+      --line: rgba(13,18,25,.12); --text: #141a22; --muted: #5b6673;
+      --accent: #b8862f; --accent-soft: rgba(184,134,47,.16);
+      --ok: #2f9e5b; --err: #c2483a; --info: #2f6fb0;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+    body { padding: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .mono { font-family: var(--mono); }
+    .fila { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px 18px; margin-bottom: 12px; }
+    .ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctrl label b { color: var(--accent); font-weight: 500; }
+    .ctrl.b label b { color: var(--info); }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+    .botones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    button { font: inherit; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--card-2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+    button.primary:hover { color: var(--bg); filter: brightness(1.08); }
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    canvas { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .lectura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+    .lectura div { background: var(--card-2); border-radius: 8px; padding: 8px 10px; }
+    .lectura span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+    .lectura .a { color: var(--accent); } .lectura .b { color: var(--info); }
+    .estado { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+    .estado b { font-weight: 500; }
+    .estado.ok b { color: var(--ok); } .estado.err b { color: var(--err); } .estado.warn b { color: var(--accent); }
+    @media (max-width: 760px) { .fila { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .fila, .graficos { grid-template-columns: 1fr; } .lectura { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="fila">
+      <div class="ctrl">
+        <label>modelo A: grado del polinomio <b id="da-v">3</b></label>
+        <input type="range" id="da" min="1" max="10" step="1" value="3" />
+      </div>
+      <div class="ctrl b">
+        <label>modelo B: grado del polinomio <b id="db-v">5</b></label>
+        <input type="range" id="db" min="1" max="10" step="1" value="5" />
+      </div>
+      <div class="ctrl">
+        <label>pliegues k <b id="k-v">5</b></label>
+        <input type="range" id="k" min="2" max="10" step="1" value="5" />
+      </div>
+      <div class="ctrl">
+        <label>repeticiones r <b id="r-v">1</b></label>
+        <input type="range" id="r" min="1" max="10" step="1" value="1" />
+      </div>
+    </div>
+    <div class="botones">
+      <button class="primary" id="particion">Otra partición</button>
+      <button id="muestra">Nueva muestra</button>
+      <span class="mono" style="font-size:12px;color:var(--muted);margin-left:auto">n = 100 · ruido σ = 0.3 · función verdadera: seno</span>
+    </div>
+    <div class="graficos">
+      <canvas id="c1" height="320" aria-label="Error por pliegue de los dos modelos y sus diferencias pareadas"></canvas>
+      <canvas id="c2" height="320" aria-label="Distribución del error de prueba con una sola partición"></canvas>
+    </div>
+    <div class="lectura">
+      <div><span>MSE A (media ± ee)</span><span class="mono a" id="l-a">—</span></div>
+      <div><span>MSE B (media ± ee)</span><span class="mono b" id="l-b">—</span></div>
+      <div><span>diferencia pareada d̄ ± ee</span><span class="mono" id="l-d">—</span></div>
+      <div><span>|d̄| / ee</span><span class="mono" id="l-z">—</span></div>
+    </div>
+    <p class="estado" id="estado"></p>
+  </div>
+
+  <script>
+    // ---------- contrato con el padre (tema y alto) ----------
+    (function () {
+      var q = new URLSearchParams(location.search).get("theme");
+      if (q === "light" || q === "dark") document.documentElement.setAttribute("data-theme", q);
+      window.addEventListener("message", function (e) {
+        var d = e.data || {};
+        if (d.type === "THEME_CHANGE" && (d.theme === "light" || d.theme === "dark")) {
+          document.documentElement.setAttribute("data-theme", d.theme);
+          dibujar();
+        }
+      });
+      function avisar() {
+        if (window.parent !== window) window.parent.postMessage({ type: "WIDGET_HEIGHT", height: document.documentElement.scrollHeight }, "*");
+      }
+      window.addEventListener("load", avisar);
+      if (window.ResizeObserver) new ResizeObserver(avisar).observe(document.body);
+    })();
+
+    const $ = id => document.getElementById(id);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const N = 100, SIGMA = 0.3, N_SPLITS = 300;
+    const verdadera = x => Math.sin(2 * Math.PI * x) + 0.3 * x;
+
+    function rng(semilla) {
+      let a = semilla >>> 0;
+      return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    }
+    function normal(r) { const u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+    function barajar(arr, r) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+    let dA = 3, dB = 5, k = 5, reps = 1, semilla = 4, semillaPart = 1;
+    let datos = [], pliegues = [], splits = null;
+
+    // ---------- ajuste polinómico (mínimos cuadrados) ----------
+    const feats = (x, d) => { const f = [1], z = 2 * x - 1; for (let i = 1; i <= d; i++) f.push(f[i - 1] * z); return f; };
+    function ajustar(D, d) {
+      const p = d + 1, A = Array.from({ length: p }, () => new Array(p).fill(0)), b = new Array(p).fill(0);
+      for (const { x, y } of D) { const f = feats(x, d); for (let i = 0; i < p; i++) { b[i] += f[i] * y; for (let j = 0; j < p; j++) A[i][j] += f[i] * f[j]; } }
+      for (let i = 0; i < p; i++) A[i][i] += 1e-9;
+      const M = A.map((f, i) => [...f, b[i]]);
+      for (let c = 0; c < p; c++) { let piv = c; for (let r = c + 1; r < p; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r; [M[c], M[piv]] = [M[piv], M[c]]; if (Math.abs(M[c][c]) < 1e-14) continue; for (let r = 0; r < p; r++) { if (r === c) continue; const f = M[r][c] / M[c][c]; for (let j = c; j <= p; j++) M[r][j] -= f * M[c][j]; } }
+      return M.map((f, i) => Math.abs(f[i]) < 1e-14 ? 0 : f[p] / f[i]);
+    }
+    const mse = (D, beta, d) => D.reduce((s, { x, y }) => s + (feats(x, d).reduce((a, f, i) => a + f * beta[i], 0) - y) ** 2, 0) / D.length;
+
+    function muestrear() {
+      const r = rng(semilla);
+      datos = Array.from({ length: N }, () => { const x = r(); return { x, y: verdadera(x) + SIGMA * normal(r) }; });
+      splits = null; validar();
+    }
+    // k-fold repetido: r particiones aleatorias distintas, k pliegues cada una; los dos modelos sobre los MISMOS pliegues
+    function validar() {
+      pliegues = [];
+      for (let rep = 0; rep < reps; rep++) {
+        const r = rng(1000 * semillaPart + rep), orden = barajar(datos.map((_, i) => i), r);
+        for (let f = 0; f < k; f++) {
+          const val = new Set(orden.filter((_, i) => i % k === f));
+          const tr = datos.filter((_, i) => !val.has(i)), te = datos.filter((_, i) => val.has(i));
+          pliegues.push({ rep, a: mse(te, ajustar(tr, dA), dA), b: mse(te, ajustar(tr, dB), dB) });
+        }
+      }
+      if (!splits) { // la "lotería del split": 300 particiones 80/20 con un solo número cada una
+        splits = { a: [], b: [] };
+        for (let s = 0; s < N_SPLITS; s++) {
+          const r = rng(50000 + s), orden = barajar(datos.map((_, i) => i), r), val = new Set(orden.slice(0, Math.round(N / 5)));
+          const tr = datos.filter((_, i) => !val.has(i)), te = datos.filter((_, i) => val.has(i));
+          splits.a.push(mse(te, ajustar(tr, dA), dA)); splits.b.push(mse(te, ajustar(tr, dB), dB));
+        }
+      }
+    }
+    const media = v => v.reduce((s, x) => s + x, 0) / v.length;
+    const ee = v => { const m = media(v); return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1)) / Math.sqrt(v.length); };
+
+    // ---------- lectura ----------
+    function resumen() {
+      const A = pliegues.map(p => p.a), B = pliegues.map(p => p.b), D = pliegues.map(p => p.a - p.b);
+      return { mA: media(A), eA: ee(A), mB: media(B), eB: ee(B), mD: media(D), eD: ee(D) };
+    }
+    function leer() {
+      const s = resumen(), z = Math.abs(s.mD) / s.eD;
+      $("l-a").textContent = s.mA.toFixed(3) + " ± " + s.eA.toFixed(3); $("l-b").textContent = s.mB.toFixed(3) + " ± " + s.eB.toFixed(3);
+      $("l-d").textContent = (s.mD >= 0 ? "+" : "") + s.mD.toFixed(3) + " ± " + s.eD.toFixed(3); $("l-z").textContent = z.toFixed(1);
+      const e = $("estado"); e.className = "estado";
+      const mejor = s.mD < 0 ? "A" : "B";
+      // ¿un solo split habría dicho lo contrario?
+      const contrarios = splits.a.filter((v, i) => (v - splits.b[i] < 0) !== (s.mD < 0)).length;
+      if (dA === dB) { e.innerHTML = "Los dos modelos son el mismo: la diferencia pareada es exactamente 0 en cada pliegue. Cambia un grado para comparar."; }
+      else if (z < 2) { e.className += " warn"; e.innerHTML = "<b>Diferencia indistinguible del ruido</b> (|d̄| < 2 ee): con estos pliegues no se puede preferir " + mejor + ". " + (reps < 3 ? "Sube las repeticiones: más mediciones estrechan el error estándar (aunque lo subestiman, porque los pliegues comparten datos)." : "Ni con " + pliegues.length + " mediciones se separa: los grados " + dA + " y " + dB + " son equivalentes sobre estos datos."); }
+      else { e.className += " ok"; e.innerHTML = "<b>Diferencia detectable</b> (|d̄| = " + z.toFixed(1) + " ee): el modelo " + mejor + " (grado " + (mejor === "A" ? dA : dB) + ") gana. A la derecha, con una sola partición 80/20, el " + Math.round(100 * contrarios / N_SPLITS) + " % de los splits habría dado el resultado contrario: el número de un solo split tiene su propia varianza."; }
+    }
+
+    // ---------- dibujo ----------
+    function prep(c) {
+      const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = window.innerWidth <= 560 ? 280 : 320;
+      c.width = W * dpr; c.height = H * dpr; c.style.height = H + "px";
+      const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+    function dibujar() {
+      const colText = css("--text"), colMuted = css("--muted"), colLine = css("--line"), colAcc = css("--accent"), colInfo = css("--info"), colOk = css("--ok"), colErr = css("--err");
+      const s = resumen();
+      // --- c1: puntos por pliegue (A, B) y diferencias pareadas ---
+      const g1 = prep($("c1")), ctx = g1.ctx, W = g1.W, H = g1.H, m = { l: 50, r: 12, t: 26, b: 22 };
+      ctx.clearRect(0, 0, W, H); ctx.font = "11px IBM Plex Mono, monospace";
+      const filas = [{ et: "A", v: pliegues.map(p => p.a), col: colAcc, mu: s.mA, e: s.eA }, { et: "B", v: pliegues.map(p => p.b), col: colInfo, mu: s.mB, e: s.eB }];
+      const todos = filas.flatMap(f => f.v), lo = 0, hi = Math.max(...todos) * 1.1 || 1;
+      const Xv = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r), yFila = i => m.t + 26 + i * 62;
+      ctx.strokeStyle = colLine; ctx.fillStyle = colMuted;
+      for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; ctx.beginPath(); ctx.moveTo(Xv(v), m.t); ctx.lineTo(Xv(v), yFila(1) + 22); ctx.stroke(); ctx.fillText(v.toFixed(2), Xv(v) - 12, yFila(1) + 36); }
+      ctx.fillText("MSE por pliegue (" + pliegues.length + " mediciones) · barra = media ± 2 ee", m.l, 14);
+      filas.forEach((f, i) => {
+        const y = yFila(i);
+        ctx.fillStyle = f.col; ctx.fillText("modelo " + f.et, 6, y + 4);
+        ctx.fillStyle = f.col + "22"; ctx.fillRect(Xv(f.mu - 2 * f.e), y - 14, Xv(f.mu + 2 * f.e) - Xv(f.mu - 2 * f.e), 28);
+        f.v.forEach((v, j) => { ctx.beginPath(); ctx.arc(Xv(v), y + ((j * 7919) % 13 - 6) * 1.2, 3.5, 0, Math.PI * 2); ctx.fillStyle = f.col + "cc"; ctx.fill(); });
+        ctx.strokeStyle = f.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Xv(f.mu), y - 16); ctx.lineTo(Xv(f.mu), y + 16); ctx.stroke(); ctx.lineWidth = 1;
+      });
+      // diferencias pareadas
+      const D = pliegues.map(p => p.a - p.b), yD = yFila(1) + 104, rD = Math.max(Math.abs(Math.min(...D)), Math.abs(Math.max(...D)), 1e-6) * 1.15;
+      const Xd = v => m.l + (v + rD) / (2 * rD) * (W - m.l - m.r);
+      ctx.fillStyle = colMuted; ctx.fillText("diferencia pareada d = MSE_A − MSE_B, pliegue a pliegue", m.l, yD - 26);
+      ctx.strokeStyle = colLine; ctx.beginPath(); ctx.moveTo(Xd(0), yD - 18); ctx.lineTo(Xd(0), yD + 18); ctx.stroke(); ctx.fillText("0", Xd(0) - 3, yD + 32);
+      ctx.fillText("A mejor ←", m.l, yD + 32); ctx.fillText("→ B mejor", W - m.r - 62, yD + 32);
+      const colD = Math.abs(s.mD) / s.eD >= 2 ? colOk : colErr;
+      ctx.fillStyle = colD + "22"; ctx.fillRect(Xd(s.mD - 2 * s.eD), yD - 14, Xd(s.mD + 2 * s.eD) - Xd(s.mD - 2 * s.eD), 28);
+      D.forEach((v, j) => { ctx.beginPath(); ctx.arc(Xd(v), yD + ((j * 7919) % 13 - 6) * 1.2, 3.5, 0, Math.PI * 2); ctx.fillStyle = colText + "bb"; ctx.fill(); });
+      ctx.strokeStyle = colD; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Xd(s.mD), yD - 16); ctx.lineTo(Xd(s.mD), yD + 16); ctx.stroke(); ctx.lineWidth = 1;
+      // --- c2: histograma de la lotería del split ---
+      const g2 = prep($("c2")), c2 = g2.ctx, W2 = g2.W, H2 = g2.H, m2 = { l: 40, r: 12, t: 26, b: 26 };
+      c2.clearRect(0, 0, W2, H2); c2.font = "11px IBM Plex Mono, monospace";
+      const dif = splits.a.map((v, i) => v - splits.b[i]), ord = [...dif].sort((a, b) => a - b);
+      // rango recortado a los percentiles 2–98 (los grados altos producen colas largas); lo de fuera cae en las cubetas extremas
+      const lo2 = Math.min(0, ord[Math.floor(0.02 * ord.length)]), hi2 = Math.max(0, ord[Math.floor(0.98 * ord.length)]), nb = 24, cubetas = new Array(nb).fill(0);
+      dif.forEach(v => cubetas[Math.max(0, Math.min(nb - 1, Math.floor((v - lo2) / (hi2 - lo2 + 1e-12) * nb)))]++);
+      const X2 = v => m2.l + (v - lo2) / (hi2 - lo2 + 1e-12) * (W2 - m2.l - m2.r), Y2 = c => H2 - m2.b - c / Math.max(...cubetas) * (H2 - m2.t - m2.b - 10), anchoB = (W2 - m2.l - m2.r) / nb;
+      c2.fillStyle = colMuted; c2.fillText("una sola partición 80/20, " + N_SPLITS + " veces: MSE_A − MSE_B", m2.l, 14);
+      cubetas.forEach((c, i) => { const v0 = lo2 + (hi2 - lo2) * i / nb, v1 = lo2 + (hi2 - lo2) * (i + 1) / nb; c2.fillStyle = (v1 <= 0 ? colAcc : v0 >= 0 ? colInfo : colMuted) + "99"; c2.fillRect(m2.l + i * anchoB + 1, Y2(c), anchoB - 2, H2 - m2.b - Y2(c)); });
+      c2.strokeStyle = colText; c2.setLineDash([3, 3]); c2.beginPath(); c2.moveTo(X2(0), m2.t); c2.lineTo(X2(0), H2 - m2.b); c2.stroke(); c2.setLineDash([]);
+      c2.fillStyle = colMuted; c2.fillText("0", X2(0) - 3, H2 - 8); c2.fillText(lo2.toFixed(2), m2.l, H2 - 8); c2.fillText(hi2.toFixed(2), W2 - m2.r - 34, H2 - 8);
+      const pctA = Math.round(100 * dif.filter(v => v < 0).length / N_SPLITS);
+      c2.fillStyle = colAcc; c2.fillText("A gana en " + pctA + " % de los splits", m2.l + 4, m2.t + 10);
+      c2.fillStyle = colInfo; c2.fillText("B gana en " + (100 - pctA) + " %", m2.l + 4, m2.t + 24);
+      c2.strokeStyle = colOk; c2.lineWidth = 2; c2.beginPath(); c2.moveTo(X2(s.mD), m2.t); c2.lineTo(X2(s.mD), H2 - m2.b); c2.stroke(); c2.lineWidth = 1;
+      c2.fillStyle = colOk; c2.fillText("d̄ (k-fold)", Math.min(X2(s.mD) + 4, W2 - 70), H2 - m2.b - 6);
+    }
+
+    // ---------- eventos ----------
+    const todo = () => { splits = null; validar(); dibujar(); leer(); };
+    $("da").addEventListener("input", e => { dA = +e.target.value; $("da-v").textContent = dA; todo(); });
+    $("db").addEventListener("input", e => { dB = +e.target.value; $("db-v").textContent = dB; todo(); });
+    $("k").addEventListener("input", e => { k = +e.target.value; $("k-v").textContent = k; validar(); dibujar(); leer(); });
+    $("r").addEventListener("input", e => { reps = +e.target.value; $("r-v").textContent = reps; validar(); dibujar(); leer(); });
+    $("particion").addEventListener("click", () => { semillaPart++; validar(); dibujar(); leer(); });
+    $("muestra").addEventListener("click", () => { semilla = (semilla * 31 + 17) % 100003; muestrear(); dibujar(); leer(); });
+    window.addEventListener("resize", dibujar);
+    muestrear(); dibujar(); leer();
+  </script>
+</body>
+</html>

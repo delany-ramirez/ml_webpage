@@ -47,5 +47,19 @@
     "descripcion": "Entrena en vivo un perceptrón multicapa sobre dos lunas: cambia neuronas, capas, activación y tasa de aprendizaje; observa la frontera, la pérdida y cuánto gradiente llega a cada capa (con sigmoide y muchas capas, casi nada).",
     "leccion": "5/04-redes-neuronales",
     "alto": 600
+  },
+  {
+    "archivo": "validacion-cruzada.html",
+    "titulo": "Validación cruzada y comparación pareada",
+    "descripcion": "Compara dos polinomios sobre los mismos pliegues: mira la dispersión del error por pliegue, la diferencia pareada con su error estándar y cuántas veces una sola partición 80/20 habría dado el resultado contrario.",
+    "leccion": "3/05-sesgo-varianza-validacion",
+    "alto": 600
+  },
+  {
+    "archivo": "drift-psi.html",
+    "titulo": "Monitoreo: PSI, carta de control y reentrenamiento",
+    "descripcion": "Planta un drift de datos y uno de concepto en 24 meses simulados: el PSI ve el primero y no el segundo, la carta de control del RMSE ve el segundo; luego compara las políticas de reentrenamiento.",
+    "leccion": "6/04-monitoreo-y-drift",
+    "alto": 620
   }
 ]

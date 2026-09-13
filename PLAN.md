@@ -100,7 +100,7 @@ ml_webpage/
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | `c591f9c` |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | `a6a43c0` |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ✅ hecha | `c337350` · `db98b24` |
-| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ dos hitos (2026-09-12 y 2026-09-13): 6 autoevaluaciones y 7 widgets; sigue abierta | `e34d969` |
+| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ tres hitos (2026-09-12 y 2026-09-13): 6 autoevaluaciones y 9 widgets; sigue abierta | `e34d969` |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |
 | 8 | *(al final)* **Automatizar la actualización del contenido** — GitHub Action en `machine_learning` que, en cada push a `main`, mueva el submodule `content/` de este repo y haga push (dispara el deploy). Requiere un token con permiso de escritura en `ml_webpage` guardado como secret en el repo de contenido | ⬜ pendiente, se hace de último | |
 
@@ -398,8 +398,17 @@ Hallazgos:
   «Trabaja sobre» al inicio de la página del ejercicio y como «Notebooks del ejercicio» bajo
   cada tarjeta del bloque Practica (la tarjeta pasó de `<a>` a `<li>` con el enlace dentro,
   para no anidar botones en un ancla). 13 de 15 ejercicios citan algún notebook.
-- Ideas para siguientes hitos: widget de validación cruzada (M3·05) o de PSI/drift (M6·04);
-  cubrir con e2e una autoevaluación distinta de la del módulo 3.
+- **Tercer hito (2026-09-13)**: widgets `validacion-cruzada.html` (M3·05: dos polinomios sobre
+  los mismos pliegues, k-fold repetido, diferencia pareada con ±2 ee y la «lotería del split»:
+  300 particiones 80/20 y qué fracción daría el resultado contrario) y `drift-psi.html` (M6·04:
+  24 meses simulados con drift de datos en x₁ y de concepto en x₂, PSI por variable con umbrales
+  0.1/0.25, media de la predicción, carta de control del RMSE y las cuatro políticas de
+  reentrenamiento; reproduce la tabla de la lección: nada 0.60 · todo 0.56 · ventana 0.47 ·
+  desde el cambio 0.35 ≈ ruido). `e2e-interactivos.mjs` cubre ahora también la autoevaluación
+  del módulo 6, el bloque Comprueba de M1·01 y el widget de drift (68 aserciones en total).
+  **9 widgets**: todos los módulos 3–6 tienen al menos uno; los módulos 1 y 2 siguen sin widget.
+- Ideas para siguientes hitos: un widget para el módulo 1 (producto punto / similitud coseno,
+  o Bayes con clase rara) y otro para el 2 (imputación MCAR/MAR/MNAR, o escalado y KNN).
 
 ---
 

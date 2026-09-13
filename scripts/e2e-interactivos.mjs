@@ -98,5 +98,33 @@ await ir(`${B}/progreso/`);
 ok(!(await js(`document.getElementById('autoevaluaciones').hidden`)), "progreso: sección de autoevaluaciones visible");
 ok((await js(`document.querySelector('#auto-lista .al-score').textContent`)) === "9 / 10 · 90%", "progreso: 9 / 10 · 90%");
 
+// --- otra autoevaluación (módulo 6, 10 preguntas): todas correctas, guardado, y el bloque Comprueba de una lección del módulo 1 ---
+await ir(`${B}/modulo/6/autoevaluacion/`);
+const n6 = await js(`JSON.parse(document.querySelector('[data-quiz-datos]').textContent).length`);
+ok(n6 === 10, `quiz M6: ${n6} preguntas`);
+ok((await js(`JSON.parse(document.querySelector('[data-quiz-datos]').textContent).every(q => q.correcta >= 0 && q.correcta < q.opciones.length)`)), "quiz M6: índices de la correcta dentro de rango");
+ok((await js(`new Set(JSON.parse(document.querySelector('[data-quiz-datos]').textContent).map(q => q.correcta)).size`)) >= 3, "quiz M6: la opción correcta cambia de posición");
+await js(`(async () => {
+  const datos = JSON.parse(document.querySelector('[data-quiz-datos]').textContent);
+  const sig = document.querySelector('[data-q-siguiente]');
+  for (let i = 0; i < datos.length; i++) {
+    document.querySelectorAll('[data-quiz] .q-opcion')[datos[i].correcta].click();
+    await new Promise(r => setTimeout(r, 30)); sig.click(); await new Promise(r => setTimeout(r, 30));
+  }
+})()`);
+await espera(300);
+ok((await js(`document.querySelector('[data-q-score]').textContent`)) === "10", "quiz M6: 10 / 10");
+ok((await js(`JSON.parse(localStorage.getItem('ml.delanyr.dev/progress/v1')).autoevaluacion['autoevaluacion/6'].score`)) === 10, "quiz M6: guardado en el progreso");
+await ir(`${B}/modulo/1/teoria/01-que-es-machine-learning/`);
+ok((await js(`document.querySelector('.comprueba [data-q-contador]').textContent`)) === "1 / 2", "lección M1·01: bloque Comprueba con sus 2 preguntas");
+ok((await js(`document.querySelectorAll('.practica .b-nbs').length`)) === 0, "lección M1·01: Practica sin notebooks (los ejercicios de M1 no citan ninguno)");
+await ir(`${B}/modulo/6/teoria/04-monitoreo-y-drift/`);
+ok((await js(`${W}.dataset.src`)) === "/widgets/drift-psi.html", "lección M6·04: widget de drift registrado");
+await js(`${W}.scrollIntoView({block:'center'})`);
+await espera(1500);
+ok((await js(`${W}.contentDocument?.getElementById('l-al')?.textContent`) ?? "").includes("PSI mes"), "widget drift: alarma de PSI calculada");
+await ir(`${B}/progreso/`);
+ok((await js(`document.querySelectorAll('#auto-lista .al-score').length`)) === 2, "progreso: dos autoevaluaciones listadas");
+
 chrome.kill();
 console.log("listo");

@@ -378,6 +378,13 @@ Hallazgos:
   22 a 31 lecciones **sin tocar código**: solo el puntero del submodule. Los slugs previstos para
   los widgets de M5 coincidieron. `scripts/e2e-progreso.mjs` ahora lee el total de lecciones del
   temario en vez de tenerlo fijo.
+- **Colab y los datos (2026-09-13)**: el botón *Abrir en Colab* carga solo el `.ipynb`, y los
+  notebooks leen `../datos/…`. Se resolvió en el repo de contenido (`64b3516`): primera celda
+  de código con etiqueta `colab-arranque` que en Colab clona el repo (`--depth 1`), hace `%cd`
+  a la carpeta del notebook e instala solo lo que Colab no trae (optuna, shap, umap-learn,
+  mlflow); en local es un no-op. `herramientas/celda_colab.py` la inserta de forma idempotente
+  y `percent2ipynb.py` la añade al convertir. En el portal solo cambió el texto junto a los
+  botones («ejecuta la primera celda, que carga los datos del curso»).
 - Tras cambiar el contenido, el primer `astro build` puede avisar «Duplicate id» por la caché del
   content layer en `.astro/`; desaparece al borrar esa carpeta (en Cloudflare no ocurre, el build
   parte de cero).

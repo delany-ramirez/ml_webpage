@@ -100,7 +100,7 @@ ml_webpage/
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | `c591f9c` |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | `a6a43c0` |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ✅ hecha | `c337350` · `db98b24` |
-| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ tres hitos (2026-09-12 y 2026-09-13): 6 autoevaluaciones y 9 widgets; sigue abierta | `e34d969` |
+| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ cuatro hitos (2026-09-12 y 2026-09-13): 6 autoevaluaciones y 11 widgets, uno al menos por módulo; abierta al ritmo del contenido | `e34d969` |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |
 | 8 | *(al final)* **Automatizar la actualización del contenido** — GitHub Action en `machine_learning` que, en cada push a `main`, mueva el submodule `content/` de este repo y haga push (dispara el deploy). Requiere un token con permiso de escritura en `ml_webpage` guardado como secret en el repo de contenido | ⬜ pendiente, se hace de último | |
 
@@ -407,8 +407,17 @@ Hallazgos:
   desde el cambio 0.35 ≈ ruido). `e2e-interactivos.mjs` cubre ahora también la autoevaluación
   del módulo 6, el bloque Comprueba de M1·01 y el widget de drift (68 aserciones en total).
   **9 widgets**: todos los módulos 3–6 tienen al menos uno; los módulos 1 y 2 siguen sin widget.
-- Ideas para siguientes hitos: un widget para el módulo 1 (producto punto / similitud coseno,
-  o Bayes con clase rara) y otro para el 2 (imputación MCAR/MAR/MNAR, o escalado y KNN).
+- **Cuarto hito (2026-09-13)**: `bayes-clase-rara.html` (M1·05: prevalencia en escala
+  logarítmica, sensibilidad y especificidad; 10 000 personas como cuadrícula VP/FN/FP/VN, curva
+  del valor predictivo positivo según la prevalencia y tres casos preconfigurados; el caso de
+  la lección da 16.7 %) y `escalado-knn.html` (M2·04: asistencia 0–100 y promedio 0–5, KNN con
+  regiones en unidades originales y en el espacio que KNN «ve» —isotrópico o estandarizado—,
+  accuracy dejar-uno-fuera con y sin escalar, clic para consultar un punto y ver sus k
+  vecinos). Con esto **todos los módulos tienen al menos un widget** (11 en total). El e2e
+  comprueba el de Bayes (70 aserciones).
+- Ideas para siguientes hitos: ninguna pendiente en esta fase; se reabre cuando el contenido
+  lo pida (nuevos temas, más preguntas por lección) o si se quiere un segundo widget en M1/M2
+  (producto punto y similitud coseno; imputación MCAR/MAR/MNAR).
 
 ---
 

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teorema de Bayes: la trampa de la clase rara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1219; --card: #151c27; --card-2: #1b2431;
+      --line: rgba(232,236,242,.12); --text: #e9edf3; --muted: #8b96a8;
+      --accent: #e3b058; --accent-soft: rgba(227,176,88,.16);
+      --ok: #5fd08a; --err: #e0705f; --info: #7fb2e5;
+      --font: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", monospace;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f5f0; --card: #ffffff; --card-2: #efece5;
+      --line: rgba(13,18,25,.12); --text: #141a22; --muted: #5b6673;
+      --accent: #b8862f; --accent-soft: rgba(184,134,47,.16);
+      --ok: #2f9e5b; --err: #c2483a; --info: #2f6fb0;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+    body { padding: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .mono { font-family: var(--mono); }
+    .fila { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 18px; margin-bottom: 12px; }
+    .ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctrl label b { color: var(--accent); font-weight: 500; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+    .botones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    button { font: inherit; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--card-2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    canvas { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .lectura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+    .lectura div { background: var(--card-2); border-radius: 8px; padding: 8px 10px; }
+    .lectura span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+    .lectura .grande { font-size: 18px; color: var(--accent); }
+    .estado { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+    .estado b { font-weight: 500; }
+    .estado.ok b { color: var(--ok); } .estado.err b { color: var(--err); } .estado.warn b { color: var(--accent); }
+    @media (max-width: 720px) { .fila { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .fila, .graficos { grid-template-columns: 1fr; } .lectura { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="fila">
+      <div class="ctrl">
+        <label>prevalencia P(condición) <b id="p-v">1 %</b></label>
+        <input type="range" id="p" min="0" max="100" step="1" value="40" />
+      </div>
+      <div class="ctrl">
+        <label>sensibilidad P(+ | condición) <b id="s-v">99 %</b></label>
+        <input type="range" id="s" min="50" max="100" step="0.5" value="99" />
+      </div>
+      <div class="ctrl">
+        <label>especificidad P(− | sin condición) <b id="e-v">95 %</b></label>
+        <input type="range" id="e" min="50" max="100" step="0.5" value="95" />
+      </div>
+    </div>
+    <div class="botones">
+      <button id="b-leccion">Caso de la lección (1 %, 99 %, 95 %)</button>
+      <button id="b-comun">Condición común (30 %)</button>
+      <button id="b-esp">Prueba muy específica (99.9 %)</button>
+    </div>
+    <div class="graficos">
+      <canvas id="c1" height="320" aria-label="Población de 10 000 personas coloreada por condición y resultado de la prueba"></canvas>
+      <canvas id="c2" height="320" aria-label="Valor predictivo positivo en función de la prevalencia"></canvas>
+    </div>
+    <div class="lectura">
+      <div><span>P(condición | +) — valor predictivo positivo</span><span class="mono grande" id="l-ppv">—</span></div>
+      <div><span>de 10 000: verdaderos + · falsos +</span><span class="mono" id="l-n">—</span></div>
+      <div><span>P(sin condición | −) — valor predictivo negativo</span><span class="mono" id="l-npv">—</span></div>
+      <div><span>razón de verosimilitud (+)</span><span class="mono" id="l-lr">—</span></div>
+    </div>
+    <p class="estado" id="estado"></p>
+  </div>
+
+  <script>
+    // ---------- contrato con el padre (tema y alto) ----------
+    (function () {
+      var q = new URLSearchParams(location.search).get("theme");
+      if (q === "light" || q === "dark") document.documentElement.setAttribute("data-theme", q);
+      window.addEventListener("message", function (e) {
+        var d = e.data || {};
+        if (d.type === "THEME_CHANGE" && (d.theme === "light" || d.theme === "dark")) {
+          document.documentElement.setAttribute("data-theme", d.theme);
+          dibujar();
+        }
+      });
+      function avisar() {
+        if (window.parent !== window) window.parent.postMessage({ type: "WIDGET_HEIGHT", height: document.documentElement.scrollHeight }, "*");
+      }
+      window.addEventListener("load", avisar);
+      if (window.ResizeObserver) new ResizeObserver(avisar).observe(document.body);
+    })();
+
+    const $ = id => document.getElementById(id);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const POB = 10000;
+
+    // el deslizador de prevalencia es logarítmico: 0.1 % … 50 %
+    const prevDe = v => 0.001 * Math.pow(500, v / 100);
+    const vDe = p => 100 * Math.log(p / 0.001) / Math.log(500);
+    let prev = 0.01, sens = 0.99, esp = 0.95;
+
+    function calcular(p = prev, s = sens, e = esp) {
+      const vp = p * s, fn = p * (1 - s), fp = (1 - p) * (1 - e), vn = (1 - p) * e;
+      return { vp, fn, fp, vn, ppv: vp / (vp + fp), npv: vn / (vn + fn) };
+    }
+
+    // ---------- lectura ----------
+    function leer() {
+      const c = calcular();
+      $("l-ppv").textContent = (c.ppv * 100).toFixed(1) + " %";
+      $("l-n").textContent = Math.round(c.vp * POB) + " · " + Math.round(c.fp * POB);
+      $("l-npv").textContent = (c.npv * 100).toFixed(2) + " %";
+      $("l-lr").textContent = (sens / (1 - esp) || Infinity).toFixed(1) + "×";
+      const e = $("estado"); e.className = "estado";
+      const vp = Math.round(c.vp * POB), fp = Math.round(c.fp * POB);
+      if (esp >= 0.999 && c.ppv > 0.5) { e.className += " ok"; e.innerHTML = "<b>Con una prueba muy específica</b> los falsos positivos se reducen a " + fp + " de 10 000 y el positivo pasa a ser informativo (" + (c.ppv * 100).toFixed(0) + " %). Con clases raras, la especificidad importa más que la sensibilidad para leer un positivo."; }
+      else if (c.ppv < 0.5 && prev < 0.05) { e.className += " err"; e.innerHTML = "<b>La trampa de la clase rara:</b> la prueba acierta al " + (sens * 100).toFixed(0) + " % de los enfermos, pero como solo hay " + Math.round(prev * POB) + " enfermos por cada 10 000, sus " + vp + " verdaderos positivos quedan enterrados bajo " + fp + " falsos positivos del " + (100 - esp * 100).toFixed(1) + " % de los " + Math.round((1 - prev) * POB) + " sanos. Un positivo solo tiene " + (c.ppv * 100).toFixed(0) + " % de probabilidad de ser real. Es la razón por la que la accuracy engaña con clases desbalanceadas."; }
+      else if (c.ppv >= 0.5) { e.className += " warn"; e.innerHTML = "<b>Con prevalencia " + (prev * 100).toFixed(1) + " %</b> el positivo sí es informativo: " + vp + " verdaderos frente a " + fp + " falsos. Mismo test, otra población, otra lectura — el posterior depende del prior."; }
+      else { e.innerHTML = "P(condición | +) = sens · prev / [sens · prev + (1 − esp) · (1 − prev)]. Mueve la prevalencia: la sensibilidad y la especificidad son propiedades de la prueba; el valor predictivo depende de a quién se le aplica."; }
+    }
+
+    // ---------- dibujo ----------
+    function prep(c) {
+      const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = window.innerWidth <= 560 ? 280 : 320;
+      c.width = W * dpr; c.height = H * dpr; c.style.height = H + "px";
+      const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+    function dibujar() {
+      const colText = css("--text"), colMuted = css("--muted"), colLine = css("--line"), colAcc = css("--accent"), colInfo = css("--info"), colErr = css("--err"), colOk = css("--ok");
+      const c = calcular();
+      // --- c1: 10 000 personas en una cuadrícula 125 × 80; orden: VP, FN, FP, VN ---
+      const g1 = prep($("c1")), ctx = g1.ctx, W = g1.W, H = g1.H, m = { l: 8, r: 8, t: 26, b: 22 };
+      ctx.clearRect(0, 0, W, H); ctx.font = "11px IBM Plex Mono, monospace";
+      const cols = 125, filas = 80, cw = (W - m.l - m.r) / cols, ch = (H - m.t - m.b) / filas;
+      const n = [Math.round(c.vp * POB), Math.round(c.fn * POB), Math.round(c.fp * POB)]; n.push(POB - n[0] - n[1] - n[2]);
+      const colores = [colAcc, colErr, colInfo, colMuted + "55"];
+      let idx = 0;
+      colores.forEach((col, g) => { ctx.fillStyle = col; for (let i = 0; i < n[g]; i++, idx++) { const r = Math.floor(idx / cols), q = idx % cols; ctx.fillRect(m.l + q * cw + 0.3, m.t + r * ch + 0.3, Math.max(1, cw - 0.6), Math.max(1, ch - 0.6)); } });
+      ctx.fillStyle = colText; ctx.fillText("10 000 personas", m.l, 14);
+      const ley = [["■ verdadero +", colAcc, n[0]], ["■ falso −", colErr, n[1]], ["■ falso +", colInfo, n[2]], ["■ verdadero −", colMuted, n[3]]];
+      let x = m.l + 120; ley.forEach(([t, col, k]) => { ctx.fillStyle = col; const s = t + " " + k; ctx.fillText(s, x, 14); x += ctx.measureText(s).width + 14; });
+      ctx.fillStyle = colMuted; ctx.fillText("los positivos de la prueba son los dorados + los azules", m.l, H - 8);
+      // --- c2: PPV vs prevalencia (eje log) ---
+      const g2 = prep($("c2")), c2 = g2.ctx, W2 = g2.W, H2 = g2.H, m2 = { l: 40, r: 12, t: 26, b: 28 };
+      c2.clearRect(0, 0, W2, H2); c2.font = "11px IBM Plex Mono, monospace";
+      const X2 = p => m2.l + Math.log(p / 0.001) / Math.log(500) * (W2 - m2.l - m2.r), Y2 = v => H2 - m2.b - v * (H2 - m2.t - m2.b);
+      c2.strokeStyle = colLine; c2.fillStyle = colMuted;
+      [0, 0.25, 0.5, 0.75, 1].forEach(v => { c2.beginPath(); c2.moveTo(m2.l, Y2(v)); c2.lineTo(W2 - m2.r, Y2(v)); c2.stroke(); c2.fillText((v * 100).toFixed(0) + "%", 6, Y2(v) + 4); });
+      [0.001, 0.01, 0.1, 0.5].forEach(p => { c2.beginPath(); c2.moveTo(X2(p), m2.t); c2.lineTo(X2(p), H2 - m2.b); c2.stroke(); c2.fillText((p * 100) + "%", X2(p) - 10, H2 - 8); });
+      c2.fillText("P(condición | +) según la prevalencia (eje log)", m2.l + 4, 14);
+      // curva con la prueba actual y, en gris, la prueba «perfecta en sensibilidad» (99.9 % / 95 %) para comparar
+      const curva = (s, e, col, w) => { c2.strokeStyle = col; c2.lineWidth = w; c2.beginPath(); for (let i = 0; i <= 120; i++) { const p = prevDe(i / 1.2), v = calcular(p, s, e).ppv; i ? c2.lineTo(X2(p), Y2(v)) : c2.moveTo(X2(p), Y2(v)); } c2.stroke(); c2.lineWidth = 1; };
+      curva(sens, 0.999, colMuted, 1.2); curva(sens, esp, colAcc, 2.2);
+      c2.fillStyle = colMuted; c2.fillText("— misma sensibilidad, especificidad 99.9 %", W2 - m2.r - 250, m2.t + 12);
+      c2.fillStyle = colAcc; c2.beginPath(); c2.arc(X2(prev), Y2(c.ppv), 6, 0, Math.PI * 2); c2.fill(); c2.strokeStyle = colText; c2.lineWidth = 1.5; c2.stroke();
+      c2.fillStyle = colText; c2.fillText((c.ppv * 100).toFixed(1) + " %", Math.min(X2(prev) + 10, W2 - 60), Y2(c.ppv) - 8);
+    }
+
+    // ---------- eventos ----------
+    const todo = () => { dibujar(); leer(); };
+    const pon = (p, s, e) => { prev = p; sens = s; esp = e; $("p").value = vDe(p); $("s").value = s * 100; $("e").value = e * 100; etiquetas(); todo(); };
+    const etiquetas = () => { $("p-v").textContent = (prev * 100).toFixed(prev < 0.01 ? 1 : 0) + " %"; $("s-v").textContent = (sens * 100).toFixed(1).replace(/\.0$/, "") + " %"; $("e-v").textContent = (esp * 100).toFixed(1).replace(/\.0$/, "") + " %"; };
+    $("p").addEventListener("input", e => { prev = prevDe(+e.target.value); etiquetas(); todo(); });
+    $("s").addEventListener("input", e => { sens = +e.target.value / 100; etiquetas(); todo(); });
+    $("e").addEventListener("input", e => { esp = +e.target.value / 100; etiquetas(); todo(); });
+    $("b-leccion").addEventListener("click", () => pon(0.01, 0.99, 0.95));
+    $("b-comun").addEventListener("click", () => pon(0.30, 0.99, 0.95));
+    $("b-esp").addEventListener("click", () => pon(0.01, 0.99, 0.999));
+    window.addEventListener("resize", dibujar);
+    $("p").value = vDe(prev); etiquetas(); todo();
+  </script>
+</body>
+</html>

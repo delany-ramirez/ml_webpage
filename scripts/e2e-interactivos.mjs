@@ -123,6 +123,11 @@ ok((await js(`${W}.dataset.src`)) === "/widgets/drift-psi.html", "lección M6·0
 await js(`${W}.scrollIntoView({block:'center'})`);
 await espera(1500);
 ok((await js(`${W}.contentDocument?.getElementById('l-al')?.textContent`) ?? "").includes("PSI mes"), "widget drift: alarma de PSI calculada");
+await ir(`${B}/modulo/1/teoria/05-calculo-y-probabilidad/`);
+ok((await js(`${W}.dataset.src`)) === "/widgets/bayes-clase-rara.html", "lección M1·05: widget de Bayes registrado");
+await js(`${W}.scrollIntoView({block:'center'})`);
+await espera(1500);
+ok((await js(`${W}.contentDocument?.getElementById('l-ppv')?.textContent`) ?? "") === "16.7 %", "widget Bayes: P(condición | +) = 16.7 % en el caso de la lección");
 await ir(`${B}/progreso/`);
 ok((await js(`document.querySelectorAll('#auto-lista .al-score').length`)) === 2, "progreso: dos autoevaluaciones listadas");
 

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Escalado y KNN: la trampa de las unidades</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1219; --card: #151c27; --card-2: #1b2431;
+      --line: rgba(232,236,242,.12); --text: #e9edf3; --muted: #8b96a8;
+      --accent: #e3b058; --accent-soft: rgba(227,176,88,.16);
+      --ok: #5fd08a; --err: #e0705f; --info: #7fb2e5;
+      --font: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", monospace;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f5f0; --card: #ffffff; --card-2: #efece5;
+      --line: rgba(13,18,25,.12); --text: #141a22; --muted: #5b6673;
+      --accent: #b8862f; --accent-soft: rgba(184,134,47,.16);
+      --ok: #2f9e5b; --err: #c2483a; --info: #2f6fb0;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+    body { padding: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .mono { font-family: var(--mono); }
+    .fila { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 18px; margin-bottom: 12px; }
+    .ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctrl label b { color: var(--accent); font-weight: 500; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+    .botones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    button { font: inherit; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--card-2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .seg button { border: 0; border-radius: 0; }
+    .seg button.on { background: var(--accent-soft); color: var(--accent); }
+    .nota { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: auto; }
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    canvas { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; cursor: crosshair; }
+    .lectura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+    .lectura div { background: var(--card-2); border-radius: 8px; padding: 8px 10px; }
+    .lectura span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+    .estado { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+    .estado b { font-weight: 500; }
+    .estado.ok b { color: var(--ok); } .estado.err b { color: var(--err); } .estado.warn b { color: var(--accent); }
+    @media (max-width: 720px) { .fila { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .fila, .graficos { grid-template-columns: 1fr; } .lectura { grid-template-columns: 1fr 1fr; } .nota { margin-left: 0; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="fila">
+      <div class="ctrl">
+        <label>vecinos k <b id="k-v">7</b></label>
+        <input type="range" id="k" min="1" max="25" step="2" value="7" />
+      </div>
+      <div class="ctrl">
+        <label>rango de asistencia (%) <b id="r-v">0–100</b></label>
+        <input type="range" id="r" min="5" max="100" step="5" value="100" />
+      </div>
+      <div class="ctrl">
+        <label>cuánto depende la clase del promedio <b id="w-v">80 %</b></label>
+        <input type="range" id="w" min="0" max="1" step="0.1" value="0.8" />
+      </div>
+    </div>
+    <div class="botones">
+      <div class="seg" role="group" aria-label="Escalado">
+        <button class="on" data-esc="no">Sin escalar</button>
+        <button data-esc="si">Estandarizado (z)</button>
+      </div>
+      <button id="muestra">Nueva muestra</button>
+      <span class="nota">haz clic en un gráfico para consultar un punto</span>
+    </div>
+    <div class="graficos">
+      <canvas id="c1" height="320" aria-label="Datos en unidades originales con las regiones de KNN"></canvas>
+      <canvas id="c2" height="320" aria-label="Datos en el espacio de distancias que usa KNN"></canvas>
+    </div>
+    <div class="lectura">
+      <div><span>accuracy (dejar uno fuera) · sin escalar</span><span class="mono" id="l-sin">—</span></div>
+      <div><span>accuracy (dejar uno fuera) · estandarizado</span><span class="mono" id="l-con">—</span></div>
+      <div><span>parte de la distancia que aporta asistencia</span><span class="mono" id="l-dom">—</span></div>
+      <div><span>consulta: vecinos clase 1 / k</span><span class="mono" id="l-q">—</span></div>
+    </div>
+    <p class="estado" id="estado"></p>
+  </div>
+
+  <script>
+    // ---------- contrato con el padre (tema y alto) ----------
+    (function () {
+      var q = new URLSearchParams(location.search).get("theme");
+      if (q === "light" || q === "dark") document.documentElement.setAttribute("data-theme", q);
+      window.addEventListener("message", function (e) {
+        var d = e.data || {};
+        if (d.type === "THEME_CHANGE" && (d.theme === "light" || d.theme === "dark")) {
+          document.documentElement.setAttribute("data-theme", d.theme);
+          dibujar();
+        }
+      });
+      function avisar() {
+        if (window.parent !== window) window.parent.postMessage({ type: "WIDGET_HEIGHT", height: document.documentElement.scrollHeight }, "*");
+      }
+      window.addEventListener("load", avisar);
+      if (window.ResizeObserver) new ResizeObserver(avisar).observe(document.body);
+    })();
+
+    const $ = id => document.getElementById(id);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const N = 160;
+
+    function rng(semilla) {
+      let a = semilla >>> 0;
+      return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    }
+    function normal(r) { const u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+    let k = 7, rango = 100, peso = 0.8, escalar = false, semilla = 6;
+    let D = [], mu = [0, 0], sd = [1, 1], consulta = null, accSin = 0, accCon = 0;
+
+    // ---------- datos: asistencia (0–rango) y promedio (0–5); la clase «aprueba» depende sobre todo del promedio ----------
+    function muestrear() {
+      const r = rng(semilla);
+      D = Array.from({ length: N }, () => {
+        const a = Math.max(0, Math.min(rango, rango * (0.55 + 0.25 * normal(r)))), p = Math.max(0, Math.min(5, 3 + 0.9 * normal(r)));
+        const z = peso * (p - 3) / 0.9 + (1 - peso) * (a - rango * 0.55) / (rango * 0.25) + 0.35 * normal(r);
+        return { a, p, y: z > 0 ? 1 : 0 };
+      });
+      mu = [D.reduce((s, d) => s + d.a, 0) / N, D.reduce((s, d) => s + d.p, 0) / N];
+      sd = [Math.sqrt(D.reduce((s, d) => s + (d.a - mu[0]) ** 2, 0) / N) || 1, Math.sqrt(D.reduce((s, d) => s + (d.p - mu[1]) ** 2, 0) / N) || 1];
+      accSin = loo(false); accCon = loo(true);
+      consulta = null;
+    }
+    // coordenadas en el espacio donde KNN mide distancias
+    const coord = (q, esc) => esc ? [(q.a - mu[0]) / sd[0], (q.p - mu[1]) / sd[1]] : [q.a, q.p];
+    function vecinos(q, esc, excluir = -1) {
+      const c = coord(q, esc);
+      return D.map((d, i) => { const e = coord(d, esc); return { i, d2: (e[0] - c[0]) ** 2 + (e[1] - c[1]) ** 2, da: (e[0] - c[0]) ** 2, y: d.y }; })
+        .filter(v => v.i !== excluir).sort((x, y) => x.d2 - y.d2).slice(0, k);
+    }
+    const prob = (q, esc, excluir = -1) => vecinos(q, esc, excluir).reduce((s, v) => s + v.y, 0) / k;
+    function loo(esc) { let ok = 0; D.forEach((d, i) => { ok += (prob(d, esc, i) >= 0.5 ? 1 : 0) === d.y ? 1 : 0; }); return ok / N; }
+
+    // ---------- lectura ----------
+    function leer() {
+      $("l-sin").textContent = accSin.toFixed(3); $("l-con").textContent = accCon.toFixed(3);
+      // fracción media de la distancia al cuadrado que aporta la asistencia (sobre los k vecinos de cada punto)
+      let sa = 0, st = 0; D.forEach((d, i) => vecinos(d, escalar, i).forEach(v => { sa += v.da; st += v.d2; }));
+      $("l-dom").textContent = (100 * sa / st).toFixed(0) + " %";
+      const q = consulta ? vecinos(consulta, escalar) : null;
+      $("l-q").textContent = q ? q.reduce((s, v) => s + v.y, 0) + " / " + k + " → " + (prob(consulta, escalar) >= 0.5 ? "aprueba" : "no aprueba") : "—";
+      const e = $("estado"); e.className = "estado";
+      const dom = sa / st;
+      if (!escalar && dom > 0.7 && rango >= 20) { e.className += " err"; e.innerHTML = "<b>La asistencia domina la distancia</b> (" + (dom * 100).toFixed(0) + " %) solo porque sus números son más grandes (0–" + rango + " frente a 0–5). KNN casi ignora el promedio, que es la variable informativa: las regiones son franjas verticales. Accuracy " + accSin.toFixed(2) + " frente a " + accCon.toFixed(2) + " estandarizado."; }
+      else if (escalar) { e.className += " ok"; e.innerHTML = "<b>Estandarizado</b> (z = (x − μ)/σ): cada variable aporta según su relación con la clase, no según sus unidades. A la derecha, el espacio en el que KNN mide de verdad: ahora es el mismo que el de la izquierda salvo un cambio de escala. Accuracy " + accCon.toFixed(2) + "."; }
+      else if (rango < 20) { e.className += " warn"; e.innerHTML = "<b>Con rangos parecidos</b> (0–" + rango + " y 0–5) la distancia reparte el peso y KNN funciona sin escalar. Es una coincidencia de unidades, no una propiedad del algoritmo: sube el rango y vuelve el problema."; }
+      else e.innerHTML = "KNN clasifica por los k puntos más cercanos en distancia euclidiana. La distancia suma diferencias al cuadrado en cada variable: la que tenga números más grandes manda. Compara las regiones sin escalar y estandarizado; el panel derecho muestra el espacio que KNN ve.";
+    }
+
+    // ---------- dibujo ----------
+    function prep(c) {
+      const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = window.innerWidth <= 560 ? 280 : 320;
+      c.width = W * dpr; c.height = H * dpr; c.style.height = H + "px";
+      const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+    let mapa1 = null, mapa2 = null; // funciones píxel → dato, para el clic
+    function panel(c, modo, titulo, etX, etY) {
+      const esc = modo === "z";
+      const colText = css("--text"), colMuted = css("--muted"), colLine = css("--line"), colAcc = css("--accent"), colInfo = css("--info"), colErr = css("--err");
+      const { ctx, W, H } = prep(c), m = { l: 40, r: 10, t: 22, b: 26 };
+      // límites: unidades originales (izquierda) o z (derecha, misma escala en ambos ejes)
+      let x0, x1, y0, y1;
+      if (modo === "orig") { x0 = 0; x1 = rango; y0 = 0; y1 = 5; }
+      else if (modo === "iso") { x0 = 0; x1 = rango; y0 = 0; y1 = rango; } // misma escala en ambos ejes: el promedio queda aplastado
+      else { const zs = D.map(d => coord(d, true)); const L = Math.max(...zs.flat().map(Math.abs)) * 1.05; x0 = -L; x1 = L; y0 = -L; y1 = L; }
+      const X = x => m.l + (x - x0) / (x1 - x0) * (W - m.l - m.r), Y = y => H - m.b - (y - y0) / (y1 - y0) * (H - m.t - m.b);
+      ctx.clearRect(0, 0, W, H); ctx.font = "11px IBM Plex Mono, monospace";
+      // regiones de KNN (con el escalado elegido globalmente), como imagen de píxeles
+      const G = 64, img = ctx.createImageData(G, G), hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), cA = hex(colAcc), cI = hex(colInfo);
+      for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+        const gx = x0 + (i + 0.5) / G * (x1 - x0), gy = y1 - (j + 0.5) / G * (y1 - y0);
+        const q = esc ? { a: gx * sd[0] + mu[0], p: gy * sd[1] + mu[1] } : { a: gx, p: gy };
+        const pr = prob(q, escalar), col = pr >= 0.5 ? cA : cI, idx = 4 * (j * G + i);
+        img.data[idx] = col[0]; img.data[idx + 1] = col[1]; img.data[idx + 2] = col[2]; img.data[idx + 3] = Math.round(Math.abs(pr - 0.5) * 2 * 0x38 + 0x14);
+      }
+      const off = document.createElement("canvas"); off.width = G; off.height = G; off.getContext("2d").putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = false; ctx.drawImage(off, m.l, m.t, W - m.l - m.r, H - m.t - m.b); ctx.imageSmoothingEnabled = true;
+      // ejes
+      ctx.strokeStyle = colLine; ctx.fillStyle = colMuted;
+      for (let i = 0; i <= 4; i++) { const vx = x0 + (x1 - x0) * i / 4, vy = y0 + (y1 - y0) * i / 4; ctx.fillText(vx.toFixed(esc ? 1 : 0), X(vx) - 8, H - 8); ctx.fillText(vy.toFixed(1), 6, Y(vy) + 4); }
+      ctx.fillStyle = colText; ctx.fillText(titulo, m.l + 4, 14); ctx.fillStyle = colMuted; ctx.fillText(etX, W - m.r - ctx.measureText(etX).width, H - m.b - 6); ctx.fillText(etY, m.l + 4, m.t + 12);
+      // puntos
+      const vec = consulta ? new Set(vecinos(consulta, escalar).map(v => v.i)) : null;
+      D.forEach((d, i) => { const c2 = esc ? coord(d, true) : [d.a, d.p]; ctx.beginPath(); ctx.arc(X(c2[0]), Y(c2[1]), vec && vec.has(i) ? 5 : 3.2, 0, Math.PI * 2); ctx.fillStyle = d.y ? colAcc : colInfo; ctx.fill(); if (vec && vec.has(i)) { ctx.strokeStyle = colText; ctx.lineWidth = 1.5; ctx.stroke(); } });
+      if (consulta) {
+        const cq = esc ? coord(consulta, true) : [consulta.a, consulta.p];
+        vecinos(consulta, escalar).forEach(v => { const cv = esc ? coord(D[v.i], true) : [D[v.i].a, D[v.i].p]; ctx.strokeStyle = colText + "66"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(cq[0]), Y(cq[1])); ctx.lineTo(X(cv[0]), Y(cv[1])); ctx.stroke(); });
+        ctx.beginPath(); ctx.arc(X(cq[0]), Y(cq[1]), 7, 0, Math.PI * 2); ctx.fillStyle = colErr; ctx.fill(); ctx.strokeStyle = colText; ctx.lineWidth = 2; ctx.stroke();
+      }
+      // píxel → dato, para el clic
+      return (px, py) => { const gx = x0 + (px - m.l) / (W - m.l - m.r) * (x1 - x0), gy = y0 + (H - m.b - py) / (H - m.t - m.b) * (y1 - y0); return esc ? { a: gx * sd[0] + mu[0], p: gy * sd[1] + mu[1] } : { a: gx, p: gy }; };
+    }
+    function dibujar() {
+      mapa1 = panel($("c1"), "orig", "unidades originales", "asistencia (%)", "promedio");
+      mapa2 = panel($("c2"), escalar ? "z" : "iso", escalar ? "estandarizado (z): lo que KNN ve" : "sin escalar, misma escala en ambos ejes: lo que KNN ve", escalar ? "z asistencia" : "asistencia", escalar ? "z promedio" : "promedio");
+    }
+    function clic(c, mapa) {
+      c.addEventListener("click", e => { const r = c.getBoundingClientRect(); consulta = mapa()(e.clientX - r.left, e.clientY - r.top); consulta.a = Math.max(0, Math.min(rango, consulta.a)); consulta.p = Math.max(0, Math.min(5, consulta.p)); dibujar(); leer(); });
+    }
+
+    // ---------- eventos ----------
+    const todo = () => { muestrear(); dibujar(); leer(); };
+    $("k").addEventListener("input", e => { k = +e.target.value; $("k-v").textContent = k; accSin = loo(false); accCon = loo(true); dibujar(); leer(); });
+    $("r").addEventListener("input", e => { rango = +e.target.value; $("r-v").textContent = "0–" + rango; todo(); });
+    $("w").addEventListener("input", e => { peso = +e.target.value; $("w-v").textContent = Math.round(peso * 100) + " %"; todo(); });
+    $("muestra").addEventListener("click", () => { semilla = (semilla * 31 + 17) % 100003; todo(); });
+    document.querySelectorAll("[data-esc]").forEach(b => b.addEventListener("click", () => { escalar = b.dataset.esc === "si"; document.querySelectorAll("[data-esc]").forEach(x => x.classList.toggle("on", x === b)); dibujar(); leer(); }));
+    clic($("c1"), () => mapa1); clic($("c2"), () => mapa2);
+    window.addEventListener("resize", dibujar);
+    todo();
+  </script>
+</body>
+</html>

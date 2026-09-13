@@ -100,7 +100,7 @@ ml_webpage/
 | 3 | **Interactivos** — `<Quiz>` + schema JSON + autoevaluación de ejemplo; `<WidgetFrame>` + plantilla + primer widget (descenso del gradiente); bloques Explora/Practica/Comprueba en la lección | ✅ hecha | `c591f9c` |
 | 4 | **Búsqueda y pulido** — Pagefind + Ctrl+K, 404, sitemap, robots, favicon, revisión responsive (400 px) y accesibilidad | ✅ hecha | `a6a43c0` |
 | 5 | **Deploy** — `wrangler.jsonc`, repo en GitHub, Workers Builds, dominio `ml.delanyr.dev`, verificación en producción; enlace desde el portafolio | ✅ hecha | `c337350` · `db98b24` |
-| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ primer hito (2026-09-12); sigue abierta al ritmo del contenido | `e34d969` |
+| 6 | **Contenido interactivo** (continua) — autoevaluaciones por módulo, más widgets, remark plugin de enlaces cruzados, notebooks con botón Colab | ✅ dos hitos (2026-09-12 y 2026-09-13): 6 autoevaluaciones y 7 widgets; sigue abierta | `e34d969` |
 | 7 | *(opcional)* Render estático de notebooks (nbconvert en build), modo presentación de lección | ⬜ no planificada | |
 | 8 | *(al final)* **Automatizar la actualización del contenido** — GitHub Action en `machine_learning` que, en cada push a `main`, mueva el submodule `content/` de este repo y haga push (dispara el deploy). Requiere un token con permiso de escritura en `ml_webpage` guardado como secret en el repo de contenido | ⬜ pendiente, se hace de último | |
 
@@ -337,7 +337,7 @@ Hallazgos:
 - No se añade `wrangler` como devDependency (igual que en el portafolio): Workers Builds lo
   aporta en `npx wrangler deploy` y en local `npx wrangler@4` basta para validar.
 
-### ✅ Fase 6 — Contenido interactivo (primer hito 2026-09-12; continua)
+### ✅ Fase 6 — Contenido interactivo (hitos 2026-09-12 y 2026-09-13; continua)
 
 Avanza en paralelo al repo de contenido. Cada ítem es un commit pequeño.
 
@@ -345,7 +345,8 @@ Avanza en paralelo al repo de contenido. Cada ítem es un commit pequeño.
       todas ligadas a una lección (`leccion`) para que aparezcan en el bloque *Comprueba*.
       Escritas a partir de las lecciones, con escenarios y explicaciones que citan cifras del
       contenido. La posición de la opción correcta sigue un patrón variado (no siempre «B»).
-- [ ] Autoevaluación de los módulos 5 y 6 (el contenido ya está publicado desde `3832866`).
+- [x] Autoevaluación de los módulos 5 (12 preguntas) y 6 (10) (`e82075b`). Con esto los seis módulos
+      tienen autoevaluación y bloque *Comprueba* en cada lección.
 - [x] Widgets (`c4d9e0b`): `sobreajuste-polinomico.html` (M3·05), `umbral-clasificacion.html`
       (M4·03: frontera, umbral, matriz de confusión, ROC, AP y umbral de mínimo costo),
       `kmeans.html` (M5·01) y `pca-2d.html` (M5·03). Los dos del módulo 5 están registrados
@@ -380,9 +381,20 @@ Hallazgos:
 - Tras cambiar el contenido, el primer `astro build` puede avisar «Duplicate id» por la caché del
   content layer en `.astro/`; desaparece al borrar esa carpeta (en Cloudflare no ocurre, el build
   parte de cero).
-- Ideas para siguientes hitos: widget de árbol de decisión (M4·04) y de retropropagación
-  (M5·04); autoevaluaciones 5 y 6; botón *Abrir en Colab* también en el bloque Practica de la
-  lección cuando el ejercicio cite un notebook.
+- **Segundo hito (2026-09-13)**: widgets `arbol-decision.html` (M4·04: CART con Gini en JS,
+  regiones como imagen de píxeles escalada, árbol dibujado, curva accuracy vs. profundidad,
+  bagging de 25 árboles; datasets lunas/diagonal/XOR) y `retropropagacion.html` (M5·04: MLP
+  2→h×L→1 entrenado por lote completo con retropropagación escrita a mano, activaciones
+  tanh/ReLU/sigmoide con inicialización Glorot/He, frontera en vivo, pérdida y |∇W| medio por
+  capa; con sigmoide y 8 capas el cociente primera/última capa cae a ~10⁻⁴, con tanh/ReLU se
+  queda en 0.3–0.5, como en la lección) (`cba943f`). Total: 7 widgets, uno por módulo 3–6 al
+  menos.
+- Sombreados de probabilidad en canvas: dibujar celdas translúcidas con `fillRect` deja una
+  cuadrícula visible por el antialias; se resuelve con un `ImageData` de G×G píxeles escalado
+  con `imageSmoothingEnabled = false`.
+- Ideas para siguientes hitos: botón *Abrir en Colab* en el bloque Practica cuando el
+  ejercicio cite un notebook; widget de validación cruzada (M3·05) o de PSI/drift (M6·04);
+  cubrir con e2e una autoevaluación distinta de la del módulo 3.
 
 ---
 

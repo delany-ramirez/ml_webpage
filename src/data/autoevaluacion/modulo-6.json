@@ -1,0 +1,135 @@
+{
+  "modulo": 6,
+  "preguntas": [
+    {
+      "id": "m6-01",
+      "leccion": "01-trazabilidad-mlflow",
+      "pregunta": "El campeón en AP es Extra-Trees (12 MB, versión 1) pero en producción se sirve un gradient boosting (0.15 MB, versión 2) que pierde 0.04 de AP. ¿Cómo se gestiona eso en el registro de MLflow?",
+      "opciones": [
+        "Se borra la versión 1 para evitar confusiones",
+        "La API carga la versión por número: `models:/wine-buena/2`",
+        "Se registra solo el modelo que se despliega",
+        "Con dos alias distintos —`campeon` y `produccion`— sobre versiones distintas, con la razón anotada como tag; la API pide `models:/wine-buena@produccion` y no cambia al promover"
+      ],
+      "correcta": 3,
+      "explicacion": "Un modelo registrado es una decisión; los alias desacoplan el ciclo de entrenamiento del de despliegue: promover es mover el alias. Las métricas de despliegue (tamaño, latencia) deciden despliegues aunque no aparezcan en ninguna tabla de los módulos anteriores."
+    },
+    {
+      "id": "m6-02",
+      "leccion": "01-trazabilidad-mlflow",
+      "pregunta": "¿Cuál es la prueba de que la trazabilidad de una corrida sirve?",
+      "opciones": [
+        "Que al leer de la corrida hiperparámetros, semilla y hash de los datos, comprobar el hash del archivo actual y reentrenar, salga la misma AP hasta el último decimal",
+        "Que la interfaz web muestre la métrica",
+        "Que el modelo esté guardado como artefacto",
+        "Que la corrida tenga tags"
+      ],
+      "correcta": 0,
+      "explicacion": "Reproducir un número (0.567139 en ambos casos, notebook 01). Si no sale igual, algo no quedó registrado, y eso también es información. Lo que el registro no garantiza es que el modelo siga siendo bueno: eso lo responde el monitoreo."
+    },
+    {
+      "id": "m6-03",
+      "leccion": "02-apis-para-modelos",
+      "pregunta": "Llega a la API una petición con `alcohol: 94`. ¿Qué debe hacer el servicio del curso?",
+      "opciones": [
+        "Devolver 200 con la probabilidad que dé el modelo: el cliente sabrá qué hacer",
+        "Recortar el valor al máximo válido y predecir",
+        "Devolver 422 nombrando el campo y el motivo: el modelo no ha visto nada fuera del rango de entrenamiento y extrapolaría sin avisar; es la primera defensa contra el drift burdo",
+        "Devolver 500 porque es un error del servidor"
+      ],
+      "correcta": 2,
+      "explicacion": "El contrato (Pydantic con `Field(ge=…, le=…)`) se valida antes de que la petición llegue al modelo. Nunca un 200 con una predicción sobre datos malos; 500 es un bug del servidor, no una entrada inválida."
+    },
+    {
+      "id": "m6-04",
+      "leccion": "02-apis-para-modelos",
+      "pregunta": "La respuesta de `/predict` incluye, además de la probabilidad y la decisión, el umbral y la versión del modelo. ¿Por qué?",
+      "opciones": [
+        "Por compatibilidad con el formato JSON",
+        "Para que el consumidor sepa con qué criterio se le respondió y pueda auditarlo después; cuando el modelo cambie, las respuestas antiguas siguen siendo interpretables",
+        "Para que el cliente decida el umbral en cada petición",
+        "Son campos decorativos que genera FastAPI"
+      ],
+      "correcta": 1,
+      "explicacion": "La API no decide el umbral: lo reporta (se eligió en entrenamiento por costos, FN = 3 × FP). La versión enlaza cada respuesta con el registro de modelos y con la etiqueta de la imagen desplegada."
+    },
+    {
+      "id": "m6-05",
+      "leccion": "03-empaquetado-y-despliegue",
+      "pregunta": "En el Dockerfile de la API, `COPY requirements-api.txt` + `RUN uv pip install` van ANTES de `COPY api/`. ¿Por qué ese orden?",
+      "opciones": [
+        "Porque la imagen se construye por capas y reutiliza las que no cambian: las dependencias cambian poco y tardan, el código cambia siempre y es instantáneo; así cambiar `main.py` no reinstala nada",
+        "Porque Docker exige instalar dependencias primero",
+        "Para que el contenedor no corra como root",
+        "Para reducir el tamaño de la imagen"
+      ],
+      "correcta": 0,
+      "explicacion": "Es la caché de capas de Docker. El tamaño lo reduce usar `requirements-api.txt` en lugar de `pyproject.toml` (~270 MB frente a 1.6 GB del entorno del curso) y una imagen base slim; `USER servicio` es lo que evita correr como root."
+    },
+    {
+      "id": "m6-06",
+      "leccion": "03-empaquetado-y-despliegue",
+      "pregunta": "¿Por qué la API guarda con `joblib` un diccionario (modelo, columnas, umbral, metadatos) y no solo el modelo, y qué precaución exige `joblib`?",
+      "opciones": [
+        "Por velocidad de carga; ninguna precaución especial",
+        "Porque MLflow lo exige",
+        "Porque ONNX no soporta diccionarios",
+        "Porque un modelo sin sus columnas y su umbral es una función sin documentación; y `pickle`/`joblib` ejecutan código al cargar, así que solo se cargan archivos de origen conocido y con la versión de librería fijada"
+      ],
+      "correcta": 3,
+      "explicacion": "Se serializa el Pipeline completo (preprocesamiento incluido) junto a lo necesario para usarlo. Formatos como skops (el que usa MLflow 3) rechazan tipos no declarados; ONNX es independiente del lenguaje pero la conversión no siempre es completa."
+    },
+    {
+      "id": "m6-07",
+      "leccion": "04-monitoreo-y-drift",
+      "pregunta": "Meses 13–18: el PSI de `trabaja` sube a 0.3–0.4 y la predicción media cae de 3.42 a 3.16, pero el RMSE sigue en 0.34. Mes 19: PSI sin cambios y el RMSE sube a 0.44. ¿Qué pasó en cada caso?",
+      "opciones": [
+        "13–18: drift de concepto; 19: drift de datos",
+        "13–18: drift de datos sin daño (la región nueva estaba representada en el entrenamiento); 19: drift de concepto, que solo la etiqueta ve",
+        "En ambos casos hay que reentrenar de inmediato",
+        "El PSI estaba mal calculado en el mes 19"
+      ],
+      "correcta": 1,
+      "explicacion": "El drift de datos se ve sin etiquetas (PSI, KS) y no necesariamente daña; el de concepto cambia P(y | X) con entradas iguales y solo lo detecta la capa 2 (métrica por periodo contra una carta de control). Un PSI alto es una alarma que obliga a comprobar, no una sentencia."
+    },
+    {
+      "id": "m6-08",
+      "leccion": "04-monitoreo-y-drift",
+      "pregunta": "Tras el drift de concepto del mes 19, reentrenas al cerrar el mes 20. RMSE sobre 22–24: todo el historial 0.416, ventana de 6 meses 0.392, solo desde el cambio 0.357. ¿Qué concluyes?",
+      "opciones": [
+        "Siempre conviene usar todo el historial: más datos es mejor",
+        "Hay que reentrenar cada mes con la ventana más corta posible",
+        "Con drift de concepto, los datos anteriores al cambio describen una relación que ya no existe y diluyen la nueva; la política correcta es vigilar, diagnosticar y reentrenar desde el cambio",
+        "La diferencia es ruido y da igual qué datos usar"
+      ],
+      "correcta": 2,
+      "explicacion": "Con drift de datos y modelo correcto no hacía falta reentrenar; con drift de concepto, más datos no es mejor. Y cada reentrenamiento es una versión nueva de un producto: corrida en MLflow, comparación pareada contra producción, versión en el registro y despliegue con reversión posible."
+    },
+    {
+      "id": "m6-09",
+      "leccion": "04-monitoreo-y-drift",
+      "pregunta": "Con millones de peticiones, la prueba KS marca cambio significativo (p < 0.001) en casi todas las variables cada semana. ¿Qué te dice y qué te falta?",
+      "opciones": [
+        "Que el cambio es real pero no si importa: con mucho n las pruebas detectan cambios minúsculos. Falta el tamaño del efecto (PSI o similar), que no depende de n",
+        "Que hay drift grave en todas las variables: reentrenar",
+        "Que la prueba KS no sirve para monitoreo",
+        "Que hay un error de esquema"
+      ],
+      "correcta": 0,
+      "explicacion": "Un valor p dice si el cambio es real; el PSI (simétrico, independiente de n, con escala empírica < 0.1 / 0.1–0.25 / > 0.25) dice si importa. Y la distribución de las predicciones resume todas las variables en una."
+    },
+    {
+      "id": "m6-10",
+      "leccion": "03-empaquetado-y-despliegue",
+      "pregunta": "Quieres sustituir el modelo de producción por uno nuevo sin afectar a los usuarios mientras lo evalúas con tráfico real. ¿Qué estrategia es?",
+      "opciones": [
+        "Canario: el nuevo atiende el 5 % del tráfico",
+        "Prueba A/B con fracciones comparables",
+        "Reversión (rollback)",
+        "Sombra (shadow): el nuevo recibe las mismas peticiones, sus predicciones se registran pero no se usan"
+      ],
+      "correcta": 3,
+      "explicacion": "Canario y A/B sí afectan a una fracción de usuarios; la sombra compara sin afectar a nadie. Todas necesitan versiones identificables (registro + etiquetas de imagen) y registro de peticiones y respuestas; y revertir debe ser una operación de un minuto, o nadie se atreve a desplegar."
+    }
+  ]
+}

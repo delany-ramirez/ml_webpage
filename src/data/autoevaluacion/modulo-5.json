@@ -1,0 +1,161 @@
+{
+  "modulo": 5,
+  "preguntas": [
+    {
+      "id": "m5-01",
+      "leccion": "01-clustering",
+      "pregunta": "Sobre Wine Quality, K-Means con k = 2 recupera tinto/blanco con ARI 0.93 sin haber visto la columna `tipo`, pero con ningún k dice nada de la calidad (NMI ≤ 0.07). ¿Qué lección sale?",
+      "opciones": [
+        "K-Means no sirve para datos de vinos",
+        "Hay que subir k hasta que aparezca la calidad",
+        "Faltó estandarizar los datos",
+        "El clustering encuentra la estructura dominante, no la que interesa: si hay una y que predecir, hay que etiquetar"
+      ],
+      "correcta": 3,
+      "explicacion": "Clustering no es «clasificación sin etiquetas». Cada algoritmo optimiza su criterio y devuelve la partición dominante según ese criterio. La validación externa no dice si el clustering es bueno: dice qué encontró."
+    },
+    {
+      "id": "m5-02",
+      "leccion": "01-clustering",
+      "pregunta": "Tienes dos grupos con forma de media luna. K-Means con k = 2 da ARI 0.24 y single linkage / DBSCAN dan ≈ 1.0. ¿Por qué?",
+      "opciones": [
+        "K-Means divide el espacio en celdas de Voronoi (regiones convexas) y premia grupos esféricos; las lunas no lo son. Single linkage y DBSCAN definen grupo por cercanía encadenada o densidad",
+        "K-Means necesita más iteraciones para converger",
+        "Single linkage y DBSCAN usan k-means++ internamente",
+        "Es un problema de escala: K-Means requiere estandarizar y los otros no"
+      ],
+      "correcta": 0,
+      "explicacion": "Son tres definiciones distintas de grupo. La inercia, por ser suma de cuadrados, favorece grupos esféricos de tamaño parecido; K-Means la minimiza igual de convencido aunque la partición no se parezca a los grupos."
+    },
+    {
+      "id": "m5-03",
+      "leccion": "02-validacion-clusters",
+      "pregunta": "Sobre puntos uniformes en un cuadrado (sin grupos por construcción), la silueta de K-Means tiene un máximo en k = 4 con valor 0.41. ¿Qué demuestra?",
+      "opciones": [
+        "Que hay 4 grupos débiles en los datos",
+        "Que la silueta no sirve y hay que usar el codo",
+        "Que los criterios internos comparan particiones entre sí pero no comprueban que exista algo que particionar: hace falta una referencia nula",
+        "Que k = 4 es siempre un buen valor por defecto"
+      ],
+      "correcta": 2,
+      "explicacion": "Cualquier criterio que compare particiones elige una ganadora aunque los datos sean ruido. La solución es construir datos sin grupos (columnas permutadas, uniforme en la caja) y comprobar que la silueta real se separa; si no, no hay clustering que reportar."
+    },
+    {
+      "id": "m5-04",
+      "leccion": "02-validacion-clusters",
+      "pregunta": "En Wine Quality, la silueta prefiere k = 2 (0.27 vs 0.24) y Davies-Bouldin prefiere k = 4 (1.48 vs 1.63). ¿Cómo se interpreta?",
+      "opciones": [
+        "Uno de los dos criterios está mal calculado",
+        "Miden cosas parecidas a distinta resolución (puntos vs centroides); k = 4 es la jerarquía tinto / blanco seco / blanco dulce aplanada. Se reporta el desacuerdo",
+        "Hay que promediar ambos y elegir k = 3",
+        "Davies-Bouldin siempre gana porque es más barato"
+      ],
+      "correcta": 1,
+      "explicacion": "Ninguno está «equivocado»: son resúmenes razonables de los mismos datos a distinta resolución. En la práctica se miran dos o tres criterios y se reporta el desacuerdo, no se elige el que dé la respuesta deseada. La estabilidad por submuestreo (ARI > 0.97 hasta k = 4) apoya ambos."
+    },
+    {
+      "id": "m5-05",
+      "leccion": "03-reduccion-dimensionalidad",
+      "pregunta": "Sin estandarizar, sobre las 11 variables de Wine Quality el 95 % de la varianza cae en un componente con carga 0.97 en `total_sulfur_dioxide`. ¿Qué encontró PCA?",
+      "opciones": [
+        "Las unidades: PCA maximiza varianza y la varianza depende de la escala; estandarizado, PC1 pasa a ser el eje tinto/blanco con el 27 %",
+        "La variable más importante para la calidad del vino",
+        "Un error numérico de la SVD",
+        "Que las demás variables son redundantes"
+      ],
+      "correcta": 0,
+      "explicacion": "PCA no encontró estructura, encontró las unidades. Estandarizado, cada variable aporta 1 a una varianza total de p. La excepción es cuando todas las variables están en la misma unidad y sus varianzas son informativas (píxeles)."
+    },
+    {
+      "id": "m5-06",
+      "leccion": "03-reduccion-dimensionalidad",
+      "pregunta": "En un ejemplo construido, PC1 explica el 91 % de la varianza y da accuracy 0.47; PC2, con el 9 %, da 0.93. ¿Qué regla se deriva para usar PCA antes de un modelo supervisado?",
+      "opciones": [
+        "Conservar siempre el 90 % de la varianza",
+        "Usar PC2 en lugar de PC1",
+        "Nunca usar PCA antes de un modelo",
+        "PCA no ve y: reducir es una decisión que se valida con la métrica del modelo, dentro del Pipeline, no con la varianza explicada"
+      ],
+      "correcta": 3,
+      "explicacion": "Si lo que distingue las clases es una dirección de poca varianza, es la primera que PCA descarta. «Conservar el 90 %» habría tirado la información útil. PCA completo es una rotación (un modelo lineal es invariante); reducir se valida con la métrica del modelo."
+    },
+    {
+      "id": "m5-07",
+      "leccion": "03-reduccion-dimensionalidad",
+      "pregunta": "En un mapa t-SNE de tus datos, un grupo aparece el doble de grande y mucho más alejado que otro. ¿Qué puedes concluir?",
+      "opciones": [
+        "Que ese grupo es más disperso y está más lejos en los datos originales",
+        "Nada sobre tamaños ni distancias: t-SNE conserva vecindarios; la perplejidad normaliza la densidad y nada en el costo optimiza las distancias entre grupos",
+        "Que hay que subir la perplejidad para corregirlo",
+        "Que el grupo lejano es ruido"
+      ],
+      "correcta": 1,
+      "explicacion": "Un grupo 5× más disperso aparece del mismo tamaño y uno 3× más lejano a la misma distancia (medido). Un mapa t-SNE se lee como «estos puntos son vecinos de estos», y nada más; hasta la existencia de grupos hay que verificarla en el espacio original con referencia nula."
+    },
+    {
+      "id": "m5-08",
+      "leccion": "04-redes-neuronales",
+      "pregunta": "Apilas dos capas `nn.Linear` sin función de activación entre ellas. ¿Qué modelo tienes?",
+      "opciones": [
+        "Una red de dos capas con más capacidad que la regresión logística",
+        "Un perceptrón con dos hiperplanos",
+        "Una sola capa lineal: la composición de dos capas lineales es otra capa lineal (XW₁w₂ = Xw′); sin no linealidad la frontera no puede curvarse",
+        "Un modelo equivalente a un árbol de profundidad 2"
+      ],
+      "correcta": 2,
+      "explicacion": "La no linealidad φ es lo que permite que la frontera se curve. Con una neurona oculta tanh la frontera sigue siendo una recta; con dos se quiebra; con cuatro sigue la curva de las lunas (accuracy 0.96). La última capa es una regresión logística sobre variables construidas por la red."
+    },
+    {
+      "id": "m5-09",
+      "leccion": "04-redes-neuronales",
+      "pregunta": "En una red de 10 capas ocultas con sigmoide, la primera capa recibe un gradiente 10⁶ veces menor que la última; con ReLU, del mismo orden. ¿Por qué?",
+      "opciones": [
+        "La derivada de la sigmoide vale como máximo 0.25 y el gradiente que llega a la primera capa es un producto de L factores así: se desvanece. ReLU tiene derivada exactamente 1 para z > 0",
+        "ReLU tiene más parámetros",
+        "La sigmoide no es diferenciable",
+        "Es un problema de la inicialización, no de la activación"
+      ],
+      "correcta": 0,
+      "explicacion": "Es el vanishing gradient: la razón por la que las redes profundas no se podían entrenar antes de ~2010. La inicialización (Glorot/He) es parte de la misma historia —escala la varianza inicial para que señal y gradiente conserven su escala— pero el factor multiplicativo por capa lo pone φ′."
+    },
+    {
+      "id": "m5-10",
+      "leccion": "05-entrenamiento-y-limites",
+      "pregunta": "Con la misma tasa, SGD se estanca en pérdida 0.35, momento llega en 5 épocas a donde SGD tarda 100, y Adam va delante todo el camino. Pero la mejor AP de validación es la misma para los tres. ¿Qué concluyes?",
+      "opciones": [
+        "Adam es el mejor modelo",
+        "SGD está mal implementado",
+        "Hay que usar SGD porque generaliza mejor",
+        "El optimizador cambia la velocidad, no el destino; Adam es el valor por defecto porque ahorra buscar la tasa"
+      ],
+      "correcta": 3,
+      "explicacion": "Adam añade momento y una tasa por parámetro normalizada por el gradiente al cuadrado, lo que lo hace robusto a la elección de η. SGD con momento y una tasa bien afinada sigue siendo competitivo (y a veces generaliza mejor) en visión."
+    },
+    {
+      "id": "m5-11",
+      "leccion": "05-entrenamiento-y-limites",
+      "pregunta": "El early stopping elige la época mirando el mismo pliegue sobre el que reportas la AP, y obtienes 0.565; con un 15 % apartado del entrenamiento para decidir cuándo parar, 0.548. ¿Qué pasó?",
+      "opciones": [
+        "El segundo modelo entrenó con menos datos y por eso es peor",
+        "Fuga de selección: se eligió la época con la mejor AP de ese pliegue; el conjunto que decide cuándo parar es parte del entrenamiento, no de la evaluación",
+        "Es ruido: la diferencia no es significativa",
+        "El early stopping no debe usarse con validación cruzada"
+      ],
+      "correcta": 1,
+      "explicacion": "Es la fuga de selección del módulo 3 (CV anidada), otra vez: la métrica reportada es optimista porque se usó para elegir un hiperparámetro (la época). El sesgo medido es de casi dos centésimas, mayor que el error estándar."
+    },
+    {
+      "id": "m5-12",
+      "leccion": "05-entrenamiento-y-limites",
+      "pregunta": "Sobre Adult Census (39 000 filas, 8 categóricas), LightGBM da AP 0.828 ± 0.002 y un MLP 128-64 da 0.781 ± 0.002, diez veces más lento. ¿Cuál es la explicación que dan los benchmarks sobre datos tabulares?",
+      "opciones": [
+        "El MLP necesitaba más capas",
+        "Con más datos la red habría ganado",
+        "Los árboles son invariantes a transformaciones monótonas, manejan categóricas y escalas heterogéneas de fábrica, aprenden funciones irregulares y toleran variables no informativas; la red debe aprender todo eso desde pesos aleatorios",
+        "LightGBM hace trampa con las categóricas"
+      ],
+      "correcta": 2,
+      "explicacion": "Gana el modelo cuyo sesgo inductivo encaja con la estructura de los datos: árboles para tablas, convoluciones para imágenes, atención para texto. Con diez veces más datos la red mejora, pero el boosting también, y la distancia se mantiene (Grinsztajn et al., 2022)."
+    }
+  ]
+}

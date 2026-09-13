@@ -2,7 +2,7 @@
 /**
  * Bloques complementarios de una lección (sin numeración, al final del cuerpo):
  *   Explora   — visualizadores registrados para la lección (widgets.json)
- *   Practica  — ejercicios del módulo; primero los que citan esta lección
+ *   Practica  — notebooks que cita la lección (Colab / GitHub) y ejercicios del módulo; primero los que citan esta lección
  *   Comprueba — preguntas de autoevaluación etiquetadas con esta lección
  * Adaptado de la estructura Explora / Practica / Comprueba de leogaviria, con la paleta del sitio.
  */
@@ -16,9 +16,12 @@ import NotebooksCitados from "./NotebooksCitados.astro";
 
 interface Props {
   leccion: Leccion;
+  /** Markdown de la lección, para detectar los notebooks que cita */
+  cuerpo?: string;
 }
-const { leccion } = Astro.props;
+const { leccion, cuerpo = "" } = Astro.props;
 const clave = claveProgreso(leccion);
+const notebooksLeccion = notebooksCitados(cuerpo, leccion.modulo.numero);
 
 const widgets = widgetsDe(clave);
 const preguntas = await preguntasDeLeccion(leccion.modulo.numero, leccion.slug);
@@ -29,7 +32,7 @@ const ejerciciosModulo = (await getCollection("ejercicios"))
   .sort((a, b) => Number(b.cita) - Number(a.cita) || a.l.orden - b.l.orden);
 const ejercicios = ejerciciosModulo.some((x) => x.cita) ? ejerciciosModulo.filter((x) => x.cita) : ejerciciosModulo;
 
-const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0;
+const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0 || notebooksLeccion.length > 0;
 ---
 
 {hay && (
@@ -46,12 +49,17 @@ const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0;
       </div>
     )}
 
-    {ejercicios.length > 0 && (
+    {(ejercicios.length > 0 || notebooksLeccion.length > 0) && (
       <div class="bloque practica">
         <div class="b-head">
           <span class="b-tag">Practica</span>
-          <h2>Ejercicios relacionados</h2>
+          <h2>{notebooksLeccion.length > 0 ? "Notebooks y ejercicios" : "Ejercicios relacionados"}</h2>
         </div>
+        {notebooksLeccion.length > 0 && (
+          <div class="b-nbs-leccion">
+            <NotebooksCitados notebooks={notebooksLeccion} etiqueta="Notebooks de esta lección" modulo={leccion.modulo.numero} />
+          </div>
+        )}
         <ul class="b-ejercicios">
           {ejercicios.map(({ l, cita, notebooks }) => (
             <li>
@@ -146,6 +154,13 @@ const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0;
     grid-template-columns: 58px 1fr;
     gap: 4px 14px;
     padding: 12px 16px;
+  }
+  .b-nbs-leccion {
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
   }
   .b-nbs {
     padding: 10px 16px 12px 88px;

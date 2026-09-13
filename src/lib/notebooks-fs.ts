@@ -91,8 +91,16 @@ export function notebooksDe(numeroModulo: number): Notebook[] {
   return listarNotebooks().filter((n) => n.modulo === numeroModulo);
 }
 
-/** Notebooks del módulo citados en un texto (por nombre de archivo, con o sin ruta). */
+/**
+ * Notebooks citados en un texto (por nombre de archivo, con o sin ruta), en el orden en que
+ * aparecen. Se busca primero en el módulo indicado y, para los nombres que no estén ahí, en
+ * los demás módulos (una lección puede remitir a un notebook anterior del curso).
+ */
 export function notebooksCitados(texto: string, numeroModulo: number): Notebook[] {
-  const citados = new Set(Array.from(texto.matchAll(/([a-z0-9-]+\.ipynb)/g), (m) => m[1]));
-  return notebooksDe(numeroModulo).filter((nb) => citados.has(nb.archivo));
+  const citados = Array.from(new Set(Array.from(texto.matchAll(/([a-z0-9-]+\.ipynb)/g), (m) => m[1])));
+  const todos = listarNotebooks();
+  return citados.flatMap((archivo) => {
+    const nb = todos.find((n) => n.archivo === archivo && n.modulo === numeroModulo) ?? todos.find((n) => n.archivo === archivo);
+    return nb ? [nb] : [];
+  });
 }

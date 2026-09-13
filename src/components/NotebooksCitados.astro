@@ -9,8 +9,10 @@ import { tituloHtml, nn } from "../lib/curso";
 interface Props {
   notebooks: Notebook[];
   etiqueta?: string;
+  /** módulo de la página; los notebooks de otro módulo se marcan */
+  modulo?: number;
 }
-const { notebooks, etiqueta = "Notebooks de apoyo" } = Astro.props;
+const { notebooks, etiqueta = "Notebooks de apoyo", modulo } = Astro.props;
 ---
 
 {notebooks.length > 0 && (
@@ -19,7 +21,7 @@ const { notebooks, etiqueta = "Notebooks de apoyo" } = Astro.props;
     <ul>
       {notebooks.map((nb) => (
         <li>
-          <span class="nbc-n">{nn(nb.orden)}</span>
+          <span class="nbc-n">{modulo !== undefined && nb.modulo !== modulo ? `M${nb.modulo}·` : ""}{nn(nb.orden)}</span>
           <span class="nbc-t" set:html={tituloHtml(nb.titulo)} />
           <a class="btn btn-primary btn-xs" href={nb.colab} target="_blank" rel="noopener">Colab ↗</a>
           <a class="btn btn-ghost btn-xs" href={nb.github} target="_blank" rel="noopener">GitHub</a>

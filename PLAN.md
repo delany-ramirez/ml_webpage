@@ -378,6 +378,11 @@ Hallazgos:
   22 a 31 lecciones **sin tocar código**: solo el puntero del submodule. Los slugs previstos para
   los widgets de M5 coincidieron. `scripts/e2e-progreso.mjs` ahora lee el total de lecciones del
   temario en vez de tenerlo fijo.
+- **Notebooks en la lección (2026-09-13)**: el bloque Practica de cada lección muestra ahora
+  «Notebooks de esta lección» con Colab / GitHub para los `.ipynb` que cita el cuerpo, buscando
+  primero en su módulo y luego en los demás (M3·02 remite a `M1·04`). Cinco lecciones citan
+  «el notebook 02» sin nombre de archivo (M3·03, M3·04, M6·02–04) y por eso no muestran fila:
+  si se quiere, es un cambio de redacción en el contenido, no del portal.
 - **Colab y los datos (2026-09-13)**: el botón *Abrir en Colab* carga solo el `.ipynb`, y los
   notebooks leen `../datos/…`. Se resolvió en el repo de contenido (`64b3516`): primera celda
   de código con etiqueta `colab-arranque` que en Colab clona el repo (`--depth 1`), hace `%cd`

@@ -392,8 +392,13 @@ Hallazgos:
 - Sombreados de probabilidad en canvas: dibujar celdas translúcidas con `fillRect` deja una
   cuadrícula visible por el antialias; se resuelve con un `ImageData` de G×G píxeles escalado
   con `imageSmoothingEnabled = false`.
-- Ideas para siguientes hitos: botón *Abrir en Colab* en el bloque Practica cuando el
-  ejercicio cite un notebook; widget de validación cruzada (M3·05) o de PSI/drift (M6·04);
+- **Colab en los ejercicios** (2026-09-13): `notebooksCitados(texto, módulo)` en
+  `lib/notebooks-fs.ts` detecta los `NN-x.ipynb` que cita un enunciado; el componente
+  `NotebooksCitados.astro` pinta la fila «NN · título · Colab ↗ · GitHub». Se muestra como
+  «Trabaja sobre» al inicio de la página del ejercicio y como «Notebooks del ejercicio» bajo
+  cada tarjeta del bloque Practica (la tarjeta pasó de `<a>` a `<li>` con el enlace dentro,
+  para no anidar botones en un ancla). 13 de 15 ejercicios citan algún notebook.
+- Ideas para siguientes hitos: widget de validación cruzada (M3·05) o de PSI/drift (M6·04);
   cubrir con e2e una autoevaluación distinta de la del módulo 3.
 
 ---

@@ -11,6 +11,8 @@ import WidgetFrame from "./WidgetFrame.astro";
 import Quiz from "./Quiz.astro";
 import { type Leccion, parseLeccion, tituloHtml, claveProgreso, nn } from "../lib/curso";
 import { widgetsDe, preguntasDeLeccion } from "../lib/interactivos";
+import { notebooksCitados } from "../lib/notebooks-fs";
+import NotebooksCitados from "./NotebooksCitados.astro";
 
 interface Props {
   leccion: Leccion;
@@ -22,8 +24,8 @@ const widgets = widgetsDe(clave);
 const preguntas = await preguntasDeLeccion(leccion.modulo.numero, leccion.slug);
 
 const ejerciciosModulo = (await getCollection("ejercicios"))
-  .map((e) => ({ l: parseLeccion(e, "ejercicios"), cita: (e.body ?? "").includes(`${leccion.slug}.md`) }))
-  .filter((x): x is { l: Leccion; cita: boolean } => x.l !== null && x.l.modulo.numero === leccion.modulo.numero)
+  .map((e) => ({ l: parseLeccion(e, "ejercicios"), cita: (e.body ?? "").includes(`${leccion.slug}.md`), notebooks: notebooksCitados(e.body ?? "", leccion.modulo.numero) }))
+  .filter((x): x is { l: Leccion; cita: boolean; notebooks: ReturnType<typeof notebooksCitados> } => x.l !== null && x.l.modulo.numero === leccion.modulo.numero)
   .sort((a, b) => Number(b.cita) - Number(a.cita) || a.l.orden - b.l.orden);
 const ejercicios = ejerciciosModulo.some((x) => x.cita) ? ejerciciosModulo.filter((x) => x.cita) : ejerciciosModulo;
 
@@ -51,13 +53,18 @@ const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0;
           <h2>Ejercicios relacionados</h2>
         </div>
         <ul class="b-ejercicios">
-          {ejercicios.map(({ l, cita }) => (
+          {ejercicios.map(({ l, cita, notebooks }) => (
             <li>
               <a href={l.ruta}>
                 <span class="n">Ej. {nn(l.orden)}</span>
                 <span class="t" set:html={tituloHtml(l.titulo)} />
                 <span class="m">{[l.duracion, l.modalidad].filter(Boolean).join(" · ")}{cita ? " · cita esta lección" : ""}</span>
               </a>
+              {notebooks.length > 0 && (
+                <div class="b-nbs">
+                  <NotebooksCitados notebooks={notebooks} etiqueta="Notebooks del ejercicio" />
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -125,18 +132,29 @@ const hay = widgets.length > 0 || ejercicios.length > 0 || preguntas.length > 0;
     flex-direction: column;
     gap: 8px;
   }
-  .b-ejercicios a {
-    display: grid;
-    grid-template-columns: 58px 1fr;
-    gap: 4px 14px;
-    padding: 12px 16px;
+  .b-ejercicios li {
     border: 1px solid var(--line);
     border-radius: 12px;
     background: var(--surface);
     transition: border-color 0.2s;
   }
-  .b-ejercicios a:hover {
+  .b-ejercicios li:hover {
     border-color: var(--bronze);
+  }
+  .b-ejercicios a {
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    gap: 4px 14px;
+    padding: 12px 16px;
+  }
+  .b-nbs {
+    padding: 10px 16px 12px 88px;
+    border-top: 1px dashed var(--line);
+  }
+  @media (max-width: 560px) {
+    .b-nbs {
+      padding-left: 16px;
+    }
   }
   .b-ejercicios .n {
     font-family: var(--font-mono);

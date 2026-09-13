@@ -90,3 +90,9 @@ export function listarNotebooks(): Notebook[] {
 export function notebooksDe(numeroModulo: number): Notebook[] {
   return listarNotebooks().filter((n) => n.modulo === numeroModulo);
 }
+
+/** Notebooks del módulo citados en un texto (por nombre de archivo, con o sin ruta). */
+export function notebooksCitados(texto: string, numeroModulo: number): Notebook[] {
+  const citados = new Set(Array.from(texto.matchAll(/([a-z0-9-]+\.ipynb)/g), (m) => m[1]));
+  return notebooksDe(numeroModulo).filter((nb) => citados.has(nb.archivo));
+}

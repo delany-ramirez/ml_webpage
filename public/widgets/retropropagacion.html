@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Red neuronal: entrenamiento y retropropagación</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1219; --card: #151c27; --card-2: #1b2431;
+      --line: rgba(232,236,242,.12); --text: #e9edf3; --muted: #8b96a8;
+      --accent: #e3b058; --accent-soft: rgba(227,176,88,.16);
+      --ok: #5fd08a; --err: #e0705f; --info: #7fb2e5;
+      --font: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", monospace;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f5f0; --card: #ffffff; --card-2: #efece5;
+      --line: rgba(13,18,25,.12); --text: #141a22; --muted: #5b6673;
+      --accent: #b8862f; --accent-soft: rgba(184,134,47,.16);
+      --ok: #2f9e5b; --err: #c2483a; --info: #2f6fb0;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+    body { padding: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .mono { font-family: var(--mono); }
+    .fila { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 18px; margin-bottom: 12px; }
+    .ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctrl label b { color: var(--accent); font-weight: 500; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+    .botones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    button { font: inherit; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--card-2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+    button.primary:hover { color: var(--bg); filter: brightness(1.08); }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-left: auto; }
+    .seg button { border: 0; border-radius: 0; }
+    .seg button.on { background: var(--accent-soft); color: var(--accent); }
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    canvas { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .lectura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+    .lectura div { background: var(--card-2); border-radius: 8px; padding: 8px 10px; }
+    .lectura span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+    .estado { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+    .estado b { font-weight: 500; }
+    .estado.ok b { color: var(--ok); } .estado.err b { color: var(--err); } .estado.warn b { color: var(--accent); }
+    @media (max-width: 720px) { .fila { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .fila, .graficos { grid-template-columns: 1fr; } .lectura { grid-template-columns: 1fr 1fr; } .seg { margin-left: 0; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="fila">
+      <div class="ctrl">
+        <label>neuronas por capa oculta <b id="h-v">4</b></label>
+        <input type="range" id="h" min="1" max="16" step="1" value="4" />
+      </div>
+      <div class="ctrl">
+        <label>capas ocultas <b id="L-v">1</b></label>
+        <input type="range" id="L" min="1" max="8" step="1" value="1" />
+      </div>
+      <div class="ctrl">
+        <label>tasa de aprendizaje η <b id="eta-v">0.50</b></label>
+        <input type="range" id="eta" min="0.01" max="2" step="0.01" value="0.5" />
+      </div>
+    </div>
+    <div class="botones">
+      <button class="primary" id="paso">10 épocas</button>
+      <button id="play">Entrenar</button>
+      <button id="reset">Reiniciar pesos</button>
+      <div class="seg" role="group" aria-label="Activación">
+        <button class="on" data-act="tanh">tanh</button>
+        <button data-act="relu">ReLU</button>
+        <button data-act="sigmoide">sigmoide</button>
+      </div>
+    </div>
+    <div class="graficos">
+      <canvas id="c1" height="320" aria-label="Datos y frontera de decisión de la red"></canvas>
+      <canvas id="c2" height="320" aria-label="Pérdida por época y magnitud del gradiente por capa"></canvas>
+    </div>
+    <div class="lectura">
+      <div><span>época</span><span class="mono" id="l-ep">0</span></div>
+      <div><span>pérdida (entropía cruzada)</span><span class="mono" id="l-loss">—</span></div>
+      <div><span>accuracy entrenamiento</span><span class="mono" id="l-acc">—</span></div>
+      <div><span>|∇| primera capa / última</span><span class="mono" id="l-grad">—</span></div>
+    </div>
+    <p class="estado" id="estado"></p>
+  </div>
+
+  <script>
+    // ---------- contrato con el padre (tema y alto) ----------
+    (function () {
+      var q = new URLSearchParams(location.search).get("theme");
+      if (q === "light" || q === "dark") document.documentElement.setAttribute("data-theme", q);
+      window.addEventListener("message", function (e) {
+        var d = e.data || {};
+        if (d.type === "THEME_CHANGE" && (d.theme === "light" || d.theme === "dark")) {
+          document.documentElement.setAttribute("data-theme", d.theme);
+          dibujar();
+        }
+      });
+      function avisar() {
+        if (window.parent !== window) window.parent.postMessage({ type: "WIDGET_HEIGHT", height: document.documentElement.scrollHeight }, "*");
+      }
+      window.addEventListener("load", avisar);
+      if (window.ResizeObserver) new ResizeObserver(avisar).observe(document.body);
+    })();
+
+    const $ = id => document.getElementById(id);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const N = 200, MAX_EP = 3000;
+
+    function rng(semilla) {
+      let a = semilla >>> 0;
+      return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    }
+    function normal(r) { const u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+    // ---------- datos: dos lunas, estandarizadas ----------
+    const rD = rng(21);
+    const X = [], Y = [];
+    for (let i = 0; i < N; i++) {
+      const y = i % 2, t = rD() * Math.PI;
+      X.push([(y ? 1 - Math.cos(t) : Math.cos(t)) + 0.2 * normal(rD), (y ? 0.5 - Math.sin(t) : Math.sin(t)) + 0.2 * normal(rD)]); Y.push(y);
+    }
+    const mu = [0, 1].map(j => X.reduce((s, p) => s + p[j], 0) / N), sd = [0, 1].map(j => Math.sqrt(X.reduce((s, p) => s + (p[j] - mu[j]) ** 2, 0) / N));
+    X.forEach(p => { p[0] = (p[0] - mu[0]) / sd[0]; p[1] = (p[1] - mu[1]) / sd[1]; });
+
+    // ---------- la red ----------
+    const ACT = {
+      tanh: { f: z => Math.tanh(z), df: a => 1 - a * a, init: (nin, nout) => Math.sqrt(6 / (nin + nout)) },     // Glorot uniforme
+      relu: { f: z => Math.max(0, z), df: a => (a > 0 ? 1 : 0), init: (nin, nout) => Math.sqrt(6 / nin) },        // He uniforme
+      sigmoide: { f: z => 1 / (1 + Math.exp(-z)), df: a => a * (1 - a), init: (nin, nout) => Math.sqrt(6 / (nin + nout)) },
+    };
+    let h = 4, L = 1, eta = 0.5, act = "tanh", semilla = 1;
+    let W = [], b = [], epoca = 0, perdidas = [], gradCapas = [], timer = null;
+    const sig = z => 1 / (1 + Math.exp(-z));
+
+    function inicializar() {
+      clearInterval(timer); timer = null; $("play").textContent = "Entrenar";
+      const r = rng(semilla * 131 + 7), tam = [2, ...Array(L).fill(h), 1];
+      W = []; b = [];
+      for (let l = 0; l < tam.length - 1; l++) {
+        const lim = (l === tam.length - 2 ? ACT.tanh.init : ACT[act].init)(tam[l], tam[l + 1]);
+        W.push(Array.from({ length: tam[l] }, () => Array.from({ length: tam[l + 1] }, () => (r() * 2 - 1) * lim)));
+        b.push(new Array(tam[l + 1]).fill(0));
+      }
+      epoca = 0; perdidas = []; gradCapas = [];
+      evaluar(); dibujar(); leer();
+    }
+
+    // adelante: guarda las activaciones de cada capa (hacen falta para ir hacia atrás)
+    function adelante(x) {
+      const A = [x];
+      for (let l = 0; l < W.length; l++) {
+        const prev = A[l], out = new Array(W[l][0].length).fill(0);
+        for (let j = 0; j < out.length; j++) { let z = b[l][j]; for (let i = 0; i < prev.length; i++) z += prev[i] * W[l][i][j]; out[j] = l === W.length - 1 ? sig(z) : ACT[act].f(z); }
+        A.push(out);
+      }
+      return A;
+    }
+    const probabilidad = x => adelante(x)[W.length][0];
+
+    // una época de descenso del gradiente por lote completo, con retropropagación
+    function epocaGD() {
+      const dW = W.map(m => m.map(f => f.map(() => 0))), db = b.map(v => v.map(() => 0));
+      let loss = 0;
+      for (let n = 0; n < N; n++) {
+        const A = adelante(X[n]), p = A[W.length][0];
+        loss -= Y[n] * Math.log(p + 1e-12) + (1 - Y[n]) * Math.log(1 - p + 1e-12);
+        let delta = [p - Y[n]]; // gradiente de la entropía cruzada respecto al logit de salida: p − y
+        for (let l = W.length - 1; l >= 0; l--) {
+          const prev = A[l];
+          for (let i = 0; i < prev.length; i++) for (let j = 0; j < delta.length; j++) dW[l][i][j] += prev[i] * delta[j] / N;
+          for (let j = 0; j < delta.length; j++) db[l][j] += delta[j] / N;
+          if (l === 0) break;
+          const nuevo = new Array(prev.length).fill(0); // Δ_{l-1} = (Δ_l W_lᵀ) ⊙ φ'(Z_{l-1})
+          for (let i = 0; i < prev.length; i++) { let s = 0; for (let j = 0; j < delta.length; j++) s += delta[j] * W[l][i][j]; nuevo[i] = s * ACT[act].df(prev[i]); }
+          delta = nuevo;
+        }
+      }
+      gradCapas = dW.map(m => { let s = 0, c = 0; for (const f of m) for (const v of f) { s += Math.abs(v); c++; } return s / c; });
+      for (let l = 0; l < W.length; l++) { for (let i = 0; i < W[l].length; i++) for (let j = 0; j < W[l][i].length; j++) W[l][i][j] -= eta * dW[l][i][j]; for (let j = 0; j < b[l].length; j++) b[l][j] -= eta * db[l][j]; }
+      perdidas.push(loss / N); epoca++;
+      return loss / N;
+    }
+    let acc = 0, loss = null;
+    function evaluar() {
+      let ok = 0, l = 0;
+      for (let n = 0; n < N; n++) { const p = probabilidad(X[n]); ok += (p >= 0.5 ? 1 : 0) === Y[n] ? 1 : 0; l -= Y[n] * Math.log(p + 1e-12) + (1 - Y[n]) * Math.log(1 - p + 1e-12); }
+      acc = ok / N; loss = l / N;
+    }
+    function pasos(k) {
+      for (let i = 0; i < k && epoca < MAX_EP; i++) { const v = epocaGD(); if (!isFinite(v)) break; }
+      evaluar(); dibujar(); leer();
+      return epoca < MAX_EP && isFinite(loss);
+    }
+
+    // ---------- lectura ----------
+    function leer() {
+      $("l-ep").textContent = epoca; $("l-loss").textContent = isFinite(loss) ? loss.toFixed(4) : "∞"; $("l-acc").textContent = acc.toFixed(3);
+      const g0 = gradCapas[0], gL = gradCapas[gradCapas.length - 1], ratio = g0 && gL ? g0 / gL : null;
+      $("l-grad").textContent = ratio === null ? "—" : ratio.toExponential(1);
+      const e = $("estado"); e.className = "estado";
+      const params = W.reduce((s, m) => s + m.length * m[0].length, 0) + b.reduce((s, v) => s + v.length, 0);
+      if (!isFinite(loss)) { e.className += " err"; e.innerHTML = "<b>Diverge:</b> la tasa de aprendizaje es demasiado grande. Es el mismo fenómeno del módulo 3, con muchos más parámetros."; }
+      else if (epoca === 0) e.innerHTML = "Red 2 → " + Array(L).fill(h).join(" → ") + " → 1 con " + act + " (" + params + " parámetros), pesos iniciales " + (act === "relu" ? "He" : "Glorot") + ". Cada época: pasada hacia adelante (guardando activaciones), pérdida, retropropagación del residual p − y capa a capa, y un paso de gradiente.";
+      else if (ratio !== null && ratio < 5e-3) { e.className += " err"; e.innerHTML = "<b>Gradiente desvanecido:</b> la primera capa recibe un gradiente " + (1 / ratio).toExponential(0) + " veces menor que la última. Con " + act + " cada capa multiplica por φ′ ≤ " + (act === "sigmoide" ? "0.25" : "1") + "; con " + L + " capas el producto se apaga y las primeras capas no aprenden. Prueba ReLU o menos capas."; }
+      else if (L === 1 && h === 1) { e.className += " warn"; e.innerHTML = "<b>Una neurona oculta = frontera recta:</b> " + act + " es monótona, así que la salida sigue siendo una función de una sola combinación lineal. Con 2 neuronas la frontera se quiebra; con 4 sigue la curva de las lunas."; }
+      else if (acc >= 0.99 && epoca > 200) { e.className += " warn"; e.innerHTML = "<b>Accuracy ≈ 1 en entrenamiento.</b> Con " + params + " parámetros para 200 puntos la red puede seguir el ruido; el sobreajuste se vigila con validación y early stopping (lección 05), no mirando esta curva."; }
+      else if (acc >= 0.95) { e.className += " ok"; e.innerHTML = "<b>La frontera se curva:</b> las " + h + " neuronas ocultas construyen variables nuevas y la última capa es una regresión logística sobre ellas. Pérdida " + loss.toFixed(3) + " en la época " + epoca + "."; }
+      else e.innerHTML = "Entrenando… época " + epoca + ", pérdida " + loss.toFixed(3) + ", accuracy " + acc.toFixed(2) + ". |∇| por capa a la derecha: si las barras de la izquierda se hunden, las primeras capas no aprenden.";
+    }
+
+    // ---------- dibujo ----------
+    function prep(c) {
+      const dpr = window.devicePixelRatio || 1, W_ = c.clientWidth, H = window.innerWidth <= 560 && c.id === "c2" ? 280 : 320;
+      c.width = W_ * dpr; c.height = H * dpr; c.style.height = H + "px";
+      const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W: W_, H };
+    }
+    function dibujar() {
+      const colText = css("--text"), colMuted = css("--muted"), colLine = css("--line"), colAcc = css("--accent"), colInfo = css("--info"), colErr = css("--err");
+      // --- c1: frontera (imagen de píxeles) + datos ---
+      const g1 = prep($("c1")), ctx = g1.ctx, Wc = g1.W, Hc = g1.H, m = 6, R = 2.6;
+      const Xp = x => m + (x + R) / (2 * R) * (Wc - 2 * m), Yp = y => Hc - m - (y + R) / (2 * R) * (Hc - 2 * m);
+      ctx.clearRect(0, 0, Wc, Hc);
+      const G = 72, img = ctx.createImageData(G, G), hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)), cA = hex(colAcc), cI = hex(colInfo);
+      for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+        const p = probabilidad([-R + (i + 0.5) / G * 2 * R, R - (j + 0.5) / G * 2 * R]), c = p >= 0.5 ? cA : cI, k = 4 * (j * G + i);
+        img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; img.data[k + 3] = isFinite(p) ? Math.round(Math.abs(p - 0.5) * 2 * 0x40 + 0x18) : 0x18;
+      }
+      const off = document.createElement("canvas"); off.width = G; off.height = G; off.getContext("2d").putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = false; ctx.drawImage(off, m, m, Wc - 2 * m, Hc - 2 * m); ctx.imageSmoothingEnabled = true;
+      for (let n = 0; n < N; n++) {
+        ctx.beginPath(); ctx.arc(Xp(X[n][0]), Yp(X[n][1]), 3.4, 0, Math.PI * 2); ctx.fillStyle = Y[n] ? colAcc : colInfo; ctx.fill();
+        if ((probabilidad(X[n]) >= 0.5 ? 1 : 0) !== Y[n]) { ctx.strokeStyle = colErr; ctx.lineWidth = 1.5; ctx.stroke(); }
+      }
+      ctx.fillStyle = colText; ctx.font = "11px IBM Plex Mono, monospace"; ctx.fillText("● clase 1  ● clase 0  ○ error · sombreado = p̂", m + 6, Hc - m - 8);
+      // --- c2: arriba pérdida, abajo |∇| por capa ---
+      const g2 = prep($("c2")), c2 = g2.ctx, W2 = g2.W, H2 = g2.H, mitad = Math.round(H2 * 0.58);
+      c2.clearRect(0, 0, W2, H2); c2.font = "11px IBM Plex Mono, monospace";
+      const m2 = { l: 44, r: 12, t: 14, b: 22 }, nEp = Math.max(50, perdidas.length), top = Math.max(0.75, ...perdidas.slice(0, 5).filter(isFinite)) * 1.05;
+      const X2 = i => m2.l + i / nEp * (W2 - m2.l - m2.r), Y2 = v => mitad - m2.b - Math.min(1, v / top) * (mitad - m2.t - m2.b);
+      c2.strokeStyle = colLine; c2.lineWidth = 1; c2.fillStyle = colMuted;
+      for (let i = 0; i <= 3; i++) { const v = top * i / 3; c2.beginPath(); c2.moveTo(m2.l, Y2(v)); c2.lineTo(W2 - m2.r, Y2(v)); c2.stroke(); c2.fillText(v.toFixed(2), 6, Y2(v) + 4); }
+      c2.fillText("pérdida por época", m2.l + 4, m2.t + 10); c2.fillText(String(nEp), W2 - m2.r - 30, mitad - 8);
+      c2.strokeStyle = colAcc; c2.lineWidth = 2; c2.beginPath(); perdidas.forEach((v, i) => { const y = Y2(isFinite(v) ? v : top); i ? c2.lineTo(X2(i), y) : c2.moveTo(X2(i), y); }); c2.stroke();
+      // barras de gradiente por capa (escala log)
+      const y0 = mitad + 6, hb = H2 - y0 - 24, nb = W.length, ancho = (W2 - m2.l - m2.r) / nb;
+      c2.strokeStyle = colLine; c2.beginPath(); c2.moveTo(m2.l, y0 + hb); c2.lineTo(W2 - m2.r, y0 + hb); c2.stroke();
+      c2.fillStyle = colMuted; c2.fillText("|∇W| medio por capa (escala log, 10⁻⁸ … 1)", m2.l + 4, y0 + 10);
+      gradCapas.forEach((g, l) => {
+        const v = Math.max(0, Math.min(1, (Math.log10(Math.max(g, 1e-8)) + 8) / 8)), x = m2.l + l * ancho + ancho * 0.15;
+        c2.fillStyle = l === 0 && gradCapas[nb - 1] && g / gradCapas[nb - 1] < 5e-3 ? colErr : (l === nb - 1 ? colAcc : colInfo);
+        c2.fillRect(x, y0 + hb - v * (hb - 14), ancho * 0.7, v * (hb - 14));
+        c2.fillStyle = colMuted; const t = l === nb - 1 ? "salida" : "capa " + (l + 1); c2.fillText(t, x + ancho * 0.35 - c2.measureText(t).width / 2, y0 + hb + 14);
+      });
+    }
+
+    // ---------- eventos ----------
+    $("h").addEventListener("input", e => { h = +e.target.value; $("h-v").textContent = h; inicializar(); });
+    $("L").addEventListener("input", e => { L = +e.target.value; $("L-v").textContent = L; inicializar(); });
+    $("eta").addEventListener("input", e => { eta = +e.target.value; $("eta-v").textContent = eta.toFixed(2); });
+    $("paso").addEventListener("click", () => pasos(10));
+    $("reset").addEventListener("click", () => { semilla++; inicializar(); });
+    $("play").addEventListener("click", () => {
+      if (timer) { clearInterval(timer); timer = null; $("play").textContent = "Entrenar"; return; }
+      $("play").textContent = "Pausar";
+      timer = setInterval(() => { if (!pasos(20)) { clearInterval(timer); timer = null; $("play").textContent = "Entrenar"; } }, 80);
+    });
+    document.querySelectorAll("[data-act]").forEach(bt => bt.addEventListener("click", () => { act = bt.dataset.act; document.querySelectorAll("[data-act]").forEach(x => x.classList.toggle("on", x === bt)); inicializar(); }));
+    window.addEventListener("resize", dibujar);
+    inicializar();
+  </script>
+</body>
+</html>

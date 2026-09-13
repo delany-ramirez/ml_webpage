@@ -33,5 +33,19 @@
     "descripcion": "Cambia la correlación y la escala de las variables y observa hacia dónde apunta la primera componente, cuánta varianza explica y qué se pierde al proyectar sobre ella; comprueba por qué hay que estandarizar.",
     "leccion": "5/03-reduccion-dimensionalidad",
     "alto": 540
+  },
+  {
+    "archivo": "arbol-decision.html",
+    "titulo": "Árbol de decisión: profundidad, regiones y bagging",
+    "descripcion": "Sube la profundidad y mira cómo las regiones rectangulares memorizan el ruido; prueba una diagonal o un XOR, y compara un árbol solo con el promedio de 25 árboles sobre remuestras bootstrap.",
+    "leccion": "4/04-arboles-y-bagging",
+    "alto": 600
+  },
+  {
+    "archivo": "retropropagacion.html",
+    "titulo": "Red neuronal: entrenamiento y retropropagación",
+    "descripcion": "Entrena en vivo un perceptrón multicapa sobre dos lunas: cambia neuronas, capas, activación y tasa de aprendizaje; observa la frontera, la pérdida y cuánto gradiente llega a cada capa (con sigmoide y muchas capas, casi nada).",
+    "leccion": "5/04-redes-neuronales",
+    "alto": 600
   }
 ]

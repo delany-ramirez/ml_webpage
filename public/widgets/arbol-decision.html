@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Árbol de decisión: profundidad, regiones y bagging</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1219; --card: #151c27; --card-2: #1b2431;
+      --line: rgba(232,236,242,.12); --text: #e9edf3; --muted: #8b96a8;
+      --accent: #e3b058; --accent-soft: rgba(227,176,88,.16);
+      --ok: #5fd08a; --err: #e0705f; --info: #7fb2e5;
+      --font: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", monospace;
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f5f0; --card: #ffffff; --card-2: #efece5;
+      --line: rgba(13,18,25,.12); --text: #141a22; --muted: #5b6673;
+      --accent: #b8862f; --accent-soft: rgba(184,134,47,.16);
+      --ok: #2f9e5b; --err: #c2483a; --info: #2f6fb0;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+    body { padding: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .mono { font-family: var(--mono); }
+    .fila { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 18px; margin-bottom: 12px; }
+    .ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctrl label b { color: var(--accent); font-weight: 500; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+    .botones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    button { font: inherit; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--card-2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .seg button { border: 0; border-radius: 0; }
+    .seg button.on { background: var(--accent-soft); color: var(--accent); }
+    .seg + .seg { margin-left: auto; }
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    canvas { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .lectura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+    .lectura div { background: var(--card-2); border-radius: 8px; padding: 8px 10px; }
+    .lectura span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+    .lectura .tr { color: var(--accent); } .lectura .te { color: var(--info); }
+    .estado { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+    .estado b { font-weight: 500; }
+    .estado.ok b { color: var(--ok); } .estado.err b { color: var(--err); } .estado.warn b { color: var(--accent); }
+    @media (max-width: 720px) { .fila { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .fila, .graficos { grid-template-columns: 1fr; } .lectura { grid-template-columns: 1fr 1fr; } .seg + .seg { margin-left: 0; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="fila">
+      <div class="ctrl">
+        <label>profundidad máxima <b id="d-v">3</b></label>
+        <input type="range" id="d" min="1" max="10" step="1" value="3" />
+      </div>
+      <div class="ctrl">
+        <label>mínimo de puntos por hoja <b id="h-v">1</b></label>
+        <input type="range" id="h" min="1" max="30" step="1" value="1" />
+      </div>
+      <div class="ctrl">
+        <label>ruido en las etiquetas <b id="r-v">10 %</b></label>
+        <input type="range" id="r" min="0" max="0.3" step="0.02" value="0.1" />
+      </div>
+    </div>
+    <div class="botones">
+      <div class="seg" role="group" aria-label="Modelo">
+        <button class="on" data-modo="arbol">Un árbol</button>
+        <button data-modo="bagging">Bagging (25 árboles)</button>
+      </div>
+      <div class="seg" role="group" aria-label="Datos">
+        <button class="on" data-datos="lunas">Lunas</button>
+        <button data-datos="diagonal">Diagonal</button>
+        <button data-datos="xor">XOR</button>
+      </div>
+      <button id="muestra">Nueva muestra</button>
+    </div>
+    <div class="graficos">
+      <canvas id="c1" height="320" aria-label="Regiones de decisión del árbol y datos"></canvas>
+      <canvas id="c2" height="320" aria-label="Estructura del árbol o accuracy según la profundidad"></canvas>
+    </div>
+    <div class="lectura">
+      <div><span>accuracy entrenamiento</span><span class="mono tr" id="l-tr">—</span></div>
+      <div><span>accuracy prueba</span><span class="mono te" id="l-te">—</span></div>
+      <div><span>hojas · profundidad real</span><span class="mono" id="l-hojas">—</span></div>
+      <div><span>mejor profundidad (prueba)</span><span class="mono" id="l-mejor">—</span></div>
+    </div>
+    <p class="estado" id="estado"></p>
+  </div>
+
+  <script>
+    // ---------- contrato con el padre (tema y alto) ----------
+    (function () {
+      var q = new URLSearchParams(location.search).get("theme");
+      if (q === "light" || q === "dark") document.documentElement.setAttribute("data-theme", q);
+      window.addEventListener("message", function (e) {
+        var d = e.data || {};
+        if (d.type === "THEME_CHANGE" && (d.theme === "light" || d.theme === "dark")) {
+          document.documentElement.setAttribute("data-theme", d.theme);
+          dibujar();
+        }
+      });
+      function avisar() {
+        if (window.parent !== window) window.parent.postMessage({ type: "WIDGET_HEIGHT", height: document.documentElement.scrollHeight }, "*");
+      }
+      window.addEventListener("load", avisar);
+      if (window.ResizeObserver) new ResizeObserver(avisar).observe(document.body);
+    })();
+
+    const $ = id => document.getElementById(id);
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const N = 260, N_PRUEBA = 600, B = 25, D_MAX = 10;
+
+    function rng(semilla) {
+      let a = semilla >>> 0;
+      return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    }
+    function normal(r) { const u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+    let prof = 3, minHoja = 1, ruido = 0.1, modo = "arbol", datos = "lunas", semilla = 3;
+    let entrena = [], prueba = [], arbol = null, bosque = [], curva = [];
+
+    // ---------- datos: tres formas que un árbol trata de manera distinta ----------
+    function punto(r, forma) {
+      if (forma === "lunas") {
+        const y = r() < 0.5 ? 1 : 0, t = r() * Math.PI;
+        return { x: (y ? 1 - Math.cos(t) : Math.cos(t)) + 0.18 * normal(r), z: (y ? 0.5 - Math.sin(t) : Math.sin(t)) + 0.18 * normal(r), y };
+      }
+      if (forma === "diagonal") { const x = r() * 2 - 1, z = r() * 2 - 1; return { x, z, y: x + z > 0 ? 1 : 0 }; }
+      const x = r() * 2 - 1, z = r() * 2 - 1; return { x, z, y: (x > 0) !== (z > 0) ? 1 : 0 }; // xor
+    }
+    function muestrear() {
+      const r = rng(semilla), rp = rng(9000 + semilla);
+      const gen = (rr, n) => Array.from({ length: n }, () => { const p = punto(rr, datos); if (rr() < ruido) p.y = 1 - p.y; return p; });
+      entrena = gen(r, N); prueba = gen(rp, N_PRUEBA);
+      ajustar();
+    }
+
+    // ---------- CART con Gini: partición voraz, recursión ----------
+    const gini = P => { if (!P.length) return 0; const p = P.reduce((s, q) => s + q.y, 0) / P.length; return 1 - p * p - (1 - p) * (1 - p); };
+    function mejorParticion(P) {
+      let mejor = null;
+      for (const v of ["x", "z"]) {
+        const ord = [...P].sort((a, b) => a[v] - b[v]);
+        let n1 = 0, s1 = 0; const nTot = ord.length, sTot = ord.reduce((s, q) => s + q.y, 0);
+        for (let i = 0; i < nTot - 1; i++) {
+          n1++; s1 += ord[i].y;
+          if (ord[i][v] === ord[i + 1][v]) continue;
+          const n2 = nTot - n1, s2 = sTot - s1;
+          if (n1 < minHoja || n2 < minHoja) continue;
+          const g = (p, n) => 1 - (p / n) ** 2 - (1 - p / n) ** 2;
+          const impureza = (n1 * g(s1, n1) + n2 * g(s2, n2)) / nTot;
+          if (!mejor || impureza < mejor.impureza) mejor = { v, t: (ord[i][v] + ord[i + 1][v]) / 2, impureza };
+        }
+      }
+      return mejor;
+    }
+    function construir(P, d) {
+      const p1 = P.reduce((s, q) => s + q.y, 0) / P.length, nodo = { n: P.length, p1, gini: gini(P), clase: p1 >= 0.5 ? 1 : 0 };
+      if (d >= prof || nodo.gini === 0 || P.length < 2 * minHoja) return nodo;
+      const s = mejorParticion(P);
+      if (!s || s.impureza >= nodo.gini - 1e-12) return nodo;
+      nodo.v = s.v; nodo.t = s.t;
+      nodo.izq = construir(P.filter(q => q[s.v] <= s.t), d + 1); nodo.der = construir(P.filter(q => q[s.v] > s.t), d + 1);
+      return nodo;
+    }
+    const predecirArbol = (nodo, q) => nodo.v === undefined ? nodo.p1 : predecirArbol(q[nodo.v] <= nodo.t ? nodo.izq : nodo.der, q);
+    const hojas = nodo => nodo.v === undefined ? 1 : hojas(nodo.izq) + hojas(nodo.der);
+    const profundidad = nodo => nodo.v === undefined ? 0 : 1 + Math.max(profundidad(nodo.izq), profundidad(nodo.der));
+    function bootstrap(r) { return Array.from({ length: entrena.length }, () => entrena[Math.floor(r() * entrena.length)]); }
+
+    function probabilidad(q) {
+      if (modo === "arbol") return predecirArbol(arbol, q);
+      return bosque.reduce((s, a) => s + predecirArbol(a, q), 0) / bosque.length;
+    }
+    const accuracy = (P, f) => P.reduce((s, q) => s + ((f(q) >= 0.5 ? 1 : 0) === q.y ? 1 : 0), 0) / P.length;
+
+    function ajustar() {
+      const guardada = prof;
+      // curva accuracy vs profundidad (un árbol solo), para el panel derecho en modo bagging y la lectura
+      curva = [];
+      for (let d = 1; d <= D_MAX; d++) { prof = d; const a = construir(entrena, 0); curva.push({ tr: accuracy(entrena, q => predecirArbol(a, q)), te: accuracy(prueba, q => predecirArbol(a, q)) }); }
+      prof = guardada;
+      arbol = construir(entrena, 0);
+      const r = rng(500 + semilla);
+      bosque = Array.from({ length: B }, () => construir(bootstrap(r), 0));
+    }
+
+    // ---------- lectura ----------
+    function leer() {
+      const tr = accuracy(entrena, probabilidad), te = accuracy(prueba, probabilidad);
+      const mejor = curva.reduce((m, v, i) => v.te > curva[m].te ? i : m, 0) + 1;
+      $("l-tr").textContent = tr.toFixed(3); $("l-te").textContent = te.toFixed(3);
+      $("l-hojas").textContent = modo === "arbol" ? hojas(arbol) + " · " + profundidad(arbol) : "≈" + Math.round(bosque.reduce((s, a) => s + hojas(a), 0) / B) + " por árbol · " + Math.round(bosque.reduce((s, a) => s + profundidad(a), 0) / B);
+      $("l-mejor").textContent = mejor;
+      const e = $("estado"); e.className = "estado";
+      if (modo === "bagging") { e.className += " ok"; e.innerHTML = "<b>Bagging:</b> 25 árboles, cada uno sobre una remuestra bootstrap, promediando probabilidades. Cada árbol tiene escalones distintos; el promedio los suaviza y reduce la varianza sin cambiar el sesgo. Compara la accuracy de prueba con la del árbol solo a la misma profundidad (" + curva[prof - 1].te.toFixed(3) + ")."; }
+      else if (datos === "diagonal" && prof <= 2) { e.className += " warn"; e.innerHTML = "<b>Un árbol no traza diagonales:</b> la aproxima con escalones alineados con los ejes. Con profundidad " + prof + " apenas " + hojas(arbol) + " rectángulos; sube la profundidad y verás la escalera. Una regresión logística lo resolvería con una recta."; }
+      else if (tr >= 0.999 && te < tr - 0.05) { e.className += " err"; e.innerHTML = "<b>Memoriza el entrenamiento</b> (accuracy 1.0) y pierde en prueba: cada hoja es pura, ruido incluido. La profundidad es la perilla sesgo-varianza del árbol; sube el mínimo por hoja o baja la profundidad. O promedia: prueba «Bagging»."; }
+      else if (prof === mejor) { e.className += " ok"; e.innerHTML = "<b>Mejor profundidad para esta muestra</b> según el error de prueba. Las regiones son rectángulos alineados con los ejes: cada nodo pregunta «¿x ≤ t?» y la respuesta condiciona la siguiente pregunta, por eso el árbol captura interacciones sin términos explícitos."; }
+      else if (datos === "xor" && prof === 1) { e.className += " err"; e.innerHTML = "<b>XOR con un solo corte:</b> ninguna partición por una sola variable separa nada (Gini apenas baja). Con profundidad 2 el árbol lo resuelve exacto: la segunda pregunta depende de la primera — una interacción pura."; }
+      else { e.innerHTML = "Profundidad " + prof + ": " + hojas(arbol) + " hojas. La partición de cada nodo es voraz: la mejor reducción de Gini ahora, sin mirar adelante. Regiones (izquierda) y árbol (derecha) son la misma cosa vista de dos formas."; }
+    }
+
+    // ---------- dibujo ----------
+    function prep(c) {
+      const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = window.innerWidth <= 560 && c.id === "c2" ? 260 : 320;
+      c.width = W * dpr; c.height = H * dpr; c.style.height = H + "px";
+      const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+    function limites() { return datos === "lunas" ? { x0: -1.6, x1: 2.6, z0: -1.3, z1: 1.6 } : { x0: -1.1, x1: 1.1, z0: -1.1, z1: 1.1 }; }
+    function dibujar() {
+      const colText = css("--text"), colMuted = css("--muted"), colLine = css("--line"), colAcc = css("--accent"), colInfo = css("--info"), colErr = css("--err");
+      // --- c1: regiones + puntos ---
+      const { ctx, W, H } = prep($("c1")), L = limites(), m = 6;
+      const X = x => m + (x - L.x0) / (L.x1 - L.x0) * (W - 2 * m), Z = z => H - m - (z - L.z0) / (L.z1 - L.z0) * (H - 2 * m);
+      ctx.clearRect(0, 0, W, H);
+      // regiones: una imagen de G×G píxeles (P(clase 1) → color y opacidad) escalada sin suavizado
+      const G = 96, img = ctx.createImageData(G, G), hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+      const cA = hex(colAcc), cI = hex(colInfo);
+      for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+        const p = probabilidad({ x: L.x0 + (i + 0.5) / G * (L.x1 - L.x0), z: L.z1 - (j + 0.5) / G * (L.z1 - L.z0) });
+        const c = p >= 0.5 ? cA : cI, k = 4 * (j * G + i);
+        img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; img.data[k + 3] = Math.round(Math.abs(p - 0.5) * 2 * 0x40 + 0x18);
+      }
+      const off = document.createElement("canvas"); off.width = G; off.height = G; off.getContext("2d").putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = false; ctx.drawImage(off, m, m, W - 2 * m, H - 2 * m); ctx.imageSmoothingEnabled = true;
+      for (const q of entrena) {
+        ctx.beginPath(); ctx.arc(X(q.x), Z(q.z), 3.4, 0, Math.PI * 2); ctx.fillStyle = q.y ? colAcc : colInfo; ctx.fill();
+        if ((probabilidad(q) >= 0.5 ? 1 : 0) !== q.y) { ctx.strokeStyle = colErr; ctx.lineWidth = 1.5; ctx.stroke(); }
+      }
+      ctx.fillStyle = colText; ctx.font = "11px IBM Plex Mono, monospace"; ctx.fillText("● clase 1  ● clase 0  ○ error · sombreado = P(clase 1)", m + 6, H - m - 8);
+      // --- c2: árbol (modo árbol) o curva accuracy vs profundidad (bagging) ---
+      const g = prep($("c2")), c2 = g.ctx, W2 = g.W, H2 = g.H;
+      c2.clearRect(0, 0, W2, H2); c2.font = "11px IBM Plex Mono, monospace";
+      if (modo === "arbol") {
+        const P = profundidad(arbol), dy = Math.min(46, (H2 - 40) / Math.max(P + 1, 1));
+        const pintar = (nodo, x, y, ancho) => {
+          const hoja = nodo.v === undefined, col = nodo.clase ? colAcc : colInfo;
+          if (!hoja) {
+            const xi = x - ancho / 4, xd = x + ancho / 4;
+            c2.strokeStyle = colLine; c2.lineWidth = 1; c2.beginPath(); c2.moveTo(x, y); c2.lineTo(xi, y + dy); c2.moveTo(x, y); c2.lineTo(xd, y + dy); c2.stroke();
+            pintar(nodo.izq, xi, y + dy, ancho / 2); pintar(nodo.der, xd, y + dy, ancho / 2);
+          }
+          const rad = Math.max(4, Math.min(11, 3 + Math.sqrt(nodo.n)));
+          c2.beginPath(); c2.arc(x, y, rad, 0, Math.PI * 2); c2.fillStyle = col + (hoja ? "" : "77"); c2.fill(); c2.strokeStyle = colText; c2.lineWidth = hoja ? 1.2 : 0.6; c2.stroke();
+          if (!hoja && ancho > 70) { c2.fillStyle = colMuted; const t = (nodo.v === "x" ? "x₁" : "x₂") + " ≤ " + nodo.t.toFixed(2); c2.fillText(t, x - c2.measureText(t).width / 2, y - rad - 4); }
+          if (hoja && ancho > 44) { c2.fillStyle = colMuted; const t = "n=" + nodo.n; c2.fillText(t, x - c2.measureText(t).width / 2, y + rad + 12); }
+        };
+        pintar(arbol, W2 / 2, 22, W2 - 20);
+        c2.fillStyle = colMuted; c2.fillText("raíz arriba · tamaño ∝ √n · relleno = clase mayoritaria", 8, H2 - 8);
+      } else {
+        const m2 = { l: 40, r: 12, t: 14, b: 28 };
+        const X2 = d => m2.l + (d - 1) / (D_MAX - 1) * (W2 - m2.l - m2.r), lo = 0.5, Y2 = v => H2 - m2.b - (Math.max(lo, v) - lo) / (1 - lo) * (H2 - m2.t - m2.b);
+        c2.strokeStyle = colLine; c2.lineWidth = 1; c2.fillStyle = colMuted;
+        for (let i = 0; i <= 5; i++) { const v = lo + (1 - lo) * i / 5; c2.beginPath(); c2.moveTo(m2.l, Y2(v)); c2.lineTo(W2 - m2.r, Y2(v)); c2.stroke(); c2.fillText(v.toFixed(1), 8, Y2(v) + 4); }
+        for (let d = 1; d <= D_MAX; d++) c2.fillText(d, X2(d) - 3, H2 - 8);
+        c2.fillText("profundidad (un árbol)", m2.l + 4, m2.t + 10); c2.fillText("accuracy", W2 - m2.r - 56, m2.t + 10);
+        const tr = (k, col) => { c2.strokeStyle = col; c2.lineWidth = 2; c2.beginPath(); curva.forEach((v, i) => i ? c2.lineTo(X2(i + 1), Y2(v[k])) : c2.moveTo(X2(i + 1), Y2(v[k]))); c2.stroke(); };
+        tr("tr", colAcc); tr("te", colInfo);
+        // bagging a la profundidad actual, como referencia
+        const teB = accuracy(prueba, probabilidad);
+        c2.strokeStyle = colText; c2.setLineDash([4, 3]); c2.beginPath(); c2.moveTo(m2.l, Y2(teB)); c2.lineTo(W2 - m2.r, Y2(teB)); c2.stroke(); c2.setLineDash([]);
+        c2.fillStyle = colText; c2.fillText("bagging (prueba) " + teB.toFixed(3), m2.l + 4, Y2(teB) - 5);
+        c2.fillStyle = colAcc; c2.fillText("— entrenamiento", W2 - m2.r - 110, H2 - m2.b - 22); c2.fillStyle = colInfo; c2.fillText("— prueba (1 árbol)", W2 - m2.r - 110, H2 - m2.b - 8);
+      }
+    }
+
+    // ---------- eventos ----------
+    const todo = () => { ajustar(); dibujar(); leer(); };
+    $("d").addEventListener("input", e => { prof = +e.target.value; $("d-v").textContent = prof; todo(); });
+    $("h").addEventListener("input", e => { minHoja = +e.target.value; $("h-v").textContent = minHoja; todo(); });
+    $("r").addEventListener("input", e => { ruido = +e.target.value; $("r-v").textContent = Math.round(ruido * 100) + " %"; muestrear(); dibujar(); leer(); });
+    $("muestra").addEventListener("click", () => { semilla = (semilla * 31 + 17) % 100003; muestrear(); dibujar(); leer(); });
+    document.querySelectorAll("[data-modo]").forEach(b => b.addEventListener("click", () => { modo = b.dataset.modo; document.querySelectorAll("[data-modo]").forEach(x => x.classList.toggle("on", x === b)); dibujar(); leer(); }));
+    document.querySelectorAll("[data-datos]").forEach(b => b.addEventListener("click", () => { datos = b.dataset.datos; document.querySelectorAll("[data-datos]").forEach(x => x.classList.toggle("on", x === b)); muestrear(); dibujar(); leer(); }));
+    window.addEventListener("resize", dibujar);
+    muestrear(); dibujar(); leer();
+  </script>
+</body>
+</html>

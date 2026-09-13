@@ -31,15 +31,19 @@ await cmd("Page.enable");
 const B = "http://localhost:4321";
 
 await ir(`${B}/modulo/3/teoria/02-descenso-gradiente/`);
+// El total de lecciones se lee del temario para que la prueba no dependa del avance del contenido.
+const N = await js(`document.querySelectorAll('[data-marca]').length`);
+const texto = (hechas) => `${hechas} / ${N} · ${Math.round(hechas / N * 100)}%`;
+ok(N >= 22, `temario: ${N} lecciones`);
 ok((await js(`document.querySelectorAll('[data-completar]').length`)) === 2, "lección: 2 botones completar");
-ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === "0 / 22 · 0%", "sidebar: 0 / 22 · 0% inicial");
+ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === texto(0), `sidebar: ${texto(0)} inicial`);
 await js(`document.querySelector('[data-completar]').click()`);
 await espera(200);
 ok((await js(`document.querySelector('[data-completar]').getAttribute('aria-pressed')`)) === "true", "clic → aria-pressed=true");
 ok((await js(`document.querySelector('[data-completar-texto]').textContent`)) === "Completada", "clic → texto 'Completada'");
 ok((await js(`document.querySelector('[data-marca="3/02-descenso-gradiente"]').classList.contains('hecha')`)), "sidebar: marca .hecha");
 ok((await js(`document.querySelector('[data-cuenta-modulo="3"]').textContent`)) === "1/6", "sidebar: cuenta módulo 1/6");
-ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === "1 / 22 · 5%", "sidebar: 1 / 22 · 5%");
+ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === texto(1), `sidebar: ${texto(1)}`);
 
 await ir(`${B}/modulo/3/teoria/01-regresion-lineal/`);
 ok((await js(`document.querySelector('[data-marca="3/02-descenso-gradiente"]').classList.contains('hecha')`)), "persistencia tras navegar");
@@ -49,7 +53,7 @@ await espera(200);
 await ir(`${B}/`);
 ok((await js(`document.querySelector('[data-porcentaje-modulo="3"]').textContent`)) === "33%", "landing: módulo 3 al 33%");
 ok((await js(`document.querySelector('[data-progreso-modulo="3"]').style.width`)) === "33%", "landing: barra 33%");
-ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === "2 / 22 · 9%", "landing: 2 / 22 · 9%");
+ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === texto(2), `landing: ${texto(2)}`);
 
 await ir(`${B}/progreso/`);
 const codigo = await js(`document.getElementById('codigo-exportar').value`);
@@ -58,10 +62,10 @@ ok((await js(`document.querySelector('[data-cuenta-modulo="3"]').textContent`)) 
 // reiniciar (confirm → true) e importar
 await cmd("Runtime.evaluate", { expression: `window.confirm = () => true; document.getElementById('btn-reiniciar').click()` });
 await espera(200);
-ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === "0 / 22 · 0%", "reiniciar → 0 / 22");
+ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === texto(0), `reiniciar → ${texto(0)}`);
 await js(`document.getElementById('codigo-importar').value = ${JSON.stringify(codigo)}; document.getElementById('btn-importar').click()`);
 await espera(200);
-ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === "2 / 22 · 9%", "importar → 2 / 22 restauradas");
+ok((await js(`document.querySelector('[data-progreso-texto]').textContent`)) === texto(2), `importar → ${texto(2)} restauradas`);
 ok((await js(`document.getElementById('estado-importar').textContent`)).includes("2 lecciones"), "importar: mensaje de estado");
 await js(`document.getElementById('codigo-importar').value = 'xx'; document.getElementById('btn-importar').click()`);
 ok((await js(`document.getElementById('estado-importar').textContent`)) === "Código no válido.", "importar: código inválido");

@@ -345,13 +345,13 @@ Avanza en paralelo al repo de contenido. Cada ítem es un commit pequeño.
       todas ligadas a una lección (`leccion`) para que aparezcan en el bloque *Comprueba*.
       Escritas a partir de las lecciones, con escenarios y explicaciones que citan cifras del
       contenido. La posición de la opción correcta sigue un patrón variado (no siempre «B»).
-- [ ] Autoevaluación de los módulos 5 y 6 cuando exista su contenido.
+- [ ] Autoevaluación de los módulos 5 y 6 (el contenido ya está publicado desde `3832866`).
 - [x] Widgets (`c4d9e0b`): `sobreajuste-polinomico.html` (M3·05), `umbral-clasificacion.html`
       (M4·03: frontera, umbral, matriz de confusión, ROC, AP y umbral de mínimo costo),
       `kmeans.html` (M5·01) y `pca-2d.html` (M5·03). Los dos del módulo 5 están registrados
       con el slug previsto en el README del módulo (`01-clustering`, `03-reduccion-dimensionalidad`)
-      y aparecerán en la lección cuando se publique; mientras tanto se llega a ellos desde el
-      bloque **Visualizadores** del índice de módulo (`790a804`).
+      y aparecen en su lección desde que el contenido del módulo 5 se publicó (`3832866`); el
+      bloque **Visualizadores** del índice de módulo (`790a804`) los lista en todos los módulos.
 - [x] `src/plugins/remark-enlaces-cruzados.ts` (`05a2ce9`): `` `NN-tema.md` `` → lección,
       `` `ejNN-x.md` `` → ejercicio, `` `NN-x.ipynb` `` → GitHub. Resuelve un nombre suelto en
       la carpeta del archivo, luego en el módulo, luego en todo el contenido si es único; deja
@@ -371,8 +371,15 @@ Hallazgos:
   con semilla (mulberry32) para que «Nueva muestra» sea reproducible. Puntos de ruptura:
   controles a 2 columnas < 720–760 px (el iframe en la lección mide ≈ 640 px), todo a 1
   columna < 560 px.
-- Los widgets del módulo 5 no tienen prueba en lección hasta que exista el contenido; si el
-  slug final difiere, basta cambiar `leccion` en `widgets.json`.
+- **Actualización de contenido 2026-09-13** (`f3d7492` → `3832866`): el repo de contenido migró
+  el entorno de Miniconda a uv (`pyproject.toml`, `uv.lock`, `.python-version`; desaparece
+  `environment.yml`) y publicó completos los módulos 5 y 6. El sitio pasó de 54 a 70 páginas y de
+  22 a 31 lecciones **sin tocar código**: solo el puntero del submodule. Los slugs previstos para
+  los widgets de M5 coincidieron. `scripts/e2e-progreso.mjs` ahora lee el total de lecciones del
+  temario en vez de tenerlo fijo.
+- Tras cambiar el contenido, el primer `astro build` puede avisar «Duplicate id» por la caché del
+  content layer en `.astro/`; desaparece al borrar esa carpeta (en Cloudflare no ocurre, el build
+  parte de cero).
 - Ideas para siguientes hitos: widget de árbol de decisión (M4·04) y de retropropagación
   (M5·04); autoevaluaciones 5 y 6; botón *Abrir en Colab* también en el bloque Practica de la
   lección cuando el ejercicio cite un notebook.

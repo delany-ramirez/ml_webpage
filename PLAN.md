@@ -306,7 +306,7 @@ foco gestionado en el drawer (abre → botón cerrar; cierra → botón Temario)
 - [x] Repo `delany-ramirez/ml_webpage` en GitHub (público); `main` sincronizado.
 - [x] Sección «Despliegue» en el README con los valores exactos del proyecto en Cloudflare.
 - [x] `dr_webpage`: campo `url`/`urlLabel` opcional en la colección `docencia`, entrada
-      «Machine Learning · Maestría en Ingeniería de Sistemas y Computación · 2026» primera
+      «Machine Learning · Posgrados UTP · 2026» primera
       en la pestaña Docencia con botón «Portal del curso →» (commit en ese repo).
 - [x] **(usuario, panel de Cloudflare)** Workers & Pages → Create → *Import a repository* →
       `delany-ramirez/ml_webpage`. Nombre del Worker `ml-delanyr`; build command

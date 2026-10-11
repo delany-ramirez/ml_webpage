@@ -128,6 +128,15 @@ ok((await js(`${W}.dataset.src`)) === "/widgets/bayes-clase-rara.html", "lecció
 await js(`${W}.scrollIntoView({block:'center'})`);
 await espera(1500);
 ok((await js(`${W}.contentDocument?.getElementById('l-ppv')?.textContent`) ?? "") === "16.7 %", "widget Bayes: P(condición | +) = 16.7 % en el caso de la lección");
+await ir(`${B}/modulo/3/teoria/01-regresion-lineal/`);
+ok((await js(`${W}.dataset.src`)) === "/widgets/minimos-cuadrados.html", "lección M3·01: widget de mínimos cuadrados registrado");
+await js(`${W}.scrollIntoView({block:'center'})`);
+await espera(1500);
+ok((await js(`${W}.contentDocument?.getElementById('l-sse')?.textContent`) ?? "") === "2.151", "widget mínimos cuadrados: SSE de la recta a ojo = 2.151 (como el notebook 00)");
+await js(`${W}.contentDocument.getElementById('ols').click()`);
+ok((await js(`${W}.contentDocument.getElementById('l-sse').textContent`)) === "1.491", "widget mínimos cuadrados: SSE mínimo = 1.491");
+await js(`${W}.contentDocument.getElementById('media').click()`);
+ok((await js(`${W}.contentDocument.getElementById('l-r2').textContent`)) === "0.000", "widget mínimos cuadrados: R² = 0 con la horizontal en ȳ");
 await ir(`${B}/progreso/`);
 ok((await js(`document.querySelectorAll('#auto-lista .al-score').length`)) === 2, "progreso: dos autoevaluaciones listadas");
 

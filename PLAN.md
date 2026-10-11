@@ -427,6 +427,13 @@ Hallazgos:
   accuracy dejar-uno-fuera con y sin escalar, clic para consultar un punto y ver sus k
   vecinos). Con esto **todos los módulos tienen al menos un widget** (11 en total). El e2e
   comprueba el de Bayes (70 aserciones).
+- **Widget de mínimos cuadrados (2026-10-11)**: `minimos-cuadrados.html` (M3·01) con los mismos
+  10 estudiantes de `00-regresion-lineal-intuicion.ipynb` (contenido `517971e`): recta movible
+  por deslizadores o arrastrando sus extremos, el cuadrado de cada residual dibujado con escala
+  igual en x e y, barras de $e_i^2$, SSE frente al mínimo y a SS_tot, y R² (negativo si la recta
+  es peor que ȳ). Botones recta a ojo / horizontal en ȳ / mínimos cuadrados. Los datos están
+  copiados en el widget: si el notebook cambia la muestra, hay que actualizarlos. 12 widgets;
+  el e2e comprueba SSE 2.151 (a ojo), 1.491 (mínimo) y R² = 0 (74 aserciones).
 - Ideas para siguientes hitos: ninguna pendiente en esta fase; se reabre cuando el contenido
   lo pida (nuevos temas, más preguntas por lección) o si se quiere un segundo widget en M1/M2
   (producto punto y similitud coseno; imputación MCAR/MAR/MNAR).

@@ -1,5 +1,12 @@
 [
   {
+    "archivo": "minimos-cuadrados.html",
+    "titulo": "Mínimos cuadrados: el error al cuadrado como área",
+    "descripcion": "Mueve la recta sobre los 10 estudiantes del notebook 00 y mira cómo crece o se encoge el cuadrado de cada residual; el SSE es el área roja total, y R² la compara con la de la recta horizontal en ȳ.",
+    "leccion": "3/01-regresion-lineal",
+    "alto": 640
+  },
+  {
     "archivo": "descenso-gradiente.html",
     "titulo": "Descenso del gradiente y tasa de aprendizaje",
     "descripcion": "Mueve la tasa de aprendizaje y observa cómo el descenso converge, oscila o diverge sobre una función de costo convexa, y qué pasa con una no convexa.",
